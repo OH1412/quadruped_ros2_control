@@ -47,6 +47,20 @@ Video on Real Unitree Go2 Robot:
     ```
 * Follow the guide in [unitree_mujoco](https://github.com/legubiao/unitree_mujoco) to launch the unitree mujoco go2
   simulation
+* After following the guide in the `unitree_mujoco` repository, copy the `mybot` folder from this
+  repository into the `unitree_mujoco` repository as a sibling to the `go2` folder (i.e. place
+  `mybot` and `go2` at the same directory level). This will provide the `mybot` robot model used
+  by the launch files.
+* Place all `.obj` model files required by `mybot` in the `mybot/assets` directory. Note that
+  `mybot/assets` is currently empty. If you don't have these `.obj` files locally, please
+  request the `.obj` model assets from the Pangolin team and add them into `mybot/assets`.
+
+**Note on simulation vs controller separation (important)**
+
+- The controller and simulation are separate: URDFs and parameters used inside the simulator are primarily for MPC prediction and visualization, and do not necessarily match the real robot's exact parameters.
+- Simulation models and parameters are used for predictive computations (trajectory/force/state prediction); the computed control outputs are passed through interfaces to the real robot or to a simulated controller.
+- In simulation you must import a model that matches your target platform (or re-import your robot model into `unitree_mujoco`), otherwise MPC predictions will not reflect the true mechanical characteristics and control performance may differ from expectations.
+- Applying simulation-generated data directly to other robots with different mechanical parameters, sensor layouts, or communication interfaces will likely be unrealistic; perform system identification and parameter alignment before reuse.
 * Launch the ros2-control
     ```bash
     source ~/ros2_ws/install/setup.bash
