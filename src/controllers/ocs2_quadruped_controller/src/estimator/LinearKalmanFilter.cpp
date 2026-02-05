@@ -109,7 +109,7 @@ namespace ocs2::legged_robot {
             int rIndex1 = i1;
             int rIndex2 = dimContacts_ + i1;
             int rIndex3 = 2 * dimContacts_ + i;
-            bool isContact = contact_flag_[i];
+            bool isContact = use_foot_force_contact_ ? contact_flag_[i] : (eePos[i].z() <= foot_radius_ + 0.01);
 
             scalar_t high_suspect_number(100);
             q.block(qIndex, qIndex, 3, 3) = (isContact ? 1. : high_suspect_number) * q.block(qIndex, qIndex, 3, 3);

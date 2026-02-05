@@ -5,9 +5,14 @@
 
 		<hardware>
 			<plugin>hardware_unitree_mujoco/HardwareUnitree</plugin>
-<!--			<param name="domain">0</param>-->
-<!--			<param name="network_interface">enp46s0</param>-->
-<!--			<param name="show_foot_force">true</param>-->
+			<!-- All IO via ROS topics (DDS-free) -->
+			<param name="state_joint_topic">/joint_states</param>
+			<param name="state_imu_topic">/imu</param>
+			<param name="state_foot_force_topic">/foot_force</param>
+			<param name="state_odometry_topic">/odometry</param>
+			<param name="command_joint_topic">/joint_command</param>
+			<param name="command_kp_topic">/joint_kp</param>
+			<param name="command_kd_topic">/joint_kd</param>
 		</hardware>
 
 		<joint name="FR_hip_joint">
@@ -168,10 +173,11 @@
 		</sensor>
 
 		<sensor name="foot_force">
-			<state_interface name="FR"/>
+			<!-- Order aligned to controller config: FL, RL, FR, RR -->
 			<state_interface name="FL"/>
-			<state_interface name="RR"/>
 			<state_interface name="RL"/>
+			<state_interface name="FR"/>
+			<state_interface name="RR"/>
 		</sensor>
 
 		<sensor name="odometer">

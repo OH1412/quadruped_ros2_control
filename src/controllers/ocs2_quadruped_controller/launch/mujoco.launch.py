@@ -10,6 +10,7 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 package_controller = "ocs2_quadruped_controller"
+package_hardware = "hardware_unitree_mujoco"
 
 def launch_setup(context, *args, **kwargs):
     package_description = context.launch_configurations['pkg_description']
@@ -27,6 +28,18 @@ def launch_setup(context, *args, **kwargs):
     )
 
     rviz_config_file = os.path.join(get_package_share_directory(package_controller), "config", "visualize_ocs2.rviz")
+
+    # Start DDS↔ROS bridge to convert Mujoco/real-robot DDS to ROS topics
+    unitree_bridge = Node(
+        package=package_hardware,
+        executable='unitree_dds_ros_bridge',
+        name='unitree_dds_ros_bridge',
+        parameters=[
+            {'network_interface': 'lo'},  # Use localhost for Mujoco simulation
+            {'domain': 1},
+        ],
+        output='screen',
+    )
 
     rviz = Node(
         package='rviz2',
@@ -81,6 +94,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     return [
+        unitree_bridge,  # Start bridge first to publish DDS data as ROS topics
         rviz,
         robot_state_publisher,
         controller_manager,

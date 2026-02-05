@@ -27,7 +27,7 @@ imu_sensor_broadcaster:
 ocs2_quadruped_controller:
   ros__parameters:
     update_rate: 200  # Hz
-    robot_pkg: "go2_description"
+    robot_pkg: "mybot_description"
     default_kd: 5.5
     feet_force_threshold: 4.0
     joints:
@@ -137,7 +137,7 @@ unitree_guide_controller:
 rl_quadruped_controller:
   ros__parameters:
     update_rate: 200  # Hz
-    robot_pkg: "go2_description"
+    robot_pkg: "mybot_description"
     model_folder: "legged_gym"
     joints:
       - FL_hip_joint

@@ -13,6 +13,10 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
         pluginlib
         rclcpp
         rclcpp_lifecycle
+        sensor_msgs
+        std_msgs
+        nav_msgs
+        control_input_msgs
 )
 
 # find dependencies
@@ -39,10 +43,26 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
         PRIVATE src
 )
-target_link_libraries(${PROJECT_NAME} unitree_sdk2)
 ament_target_dependencies(
         ${PROJECT_NAME}
         ${THIS_PACKAGE_INCLUDE_DEPENDS}
+)
+
+add_executable(unitree_dds_ros_bridge
+        src/unitree_dds_ros_bridge.cpp
+)
+target_include_directories(unitree_dds_ros_bridge PUBLIC
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+        "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
+        PRIVATE src
+)
+target_link_libraries(unitree_dds_ros_bridge unitree_sdk2)
+ament_target_dependencies(
+        unitree_dds_ros_bridge
+        rclcpp
+        sensor_msgs
+        std_msgs
+        nav_msgs
 )
 
 pluginlib_export_plugin_description_file(hardware_interface HardwareUnitree.xml)
@@ -58,6 +78,11 @@ install(
         ARCHIVE DESTINATION ib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin
+)
+
+install(
+        TARGETS unitree_dds_ros_bridge
+        DESTINATION lib/${PROJECT_NAME}
 )
 
 if (BUILD_TESTING)

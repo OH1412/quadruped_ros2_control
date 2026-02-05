@@ -24,6 +24,11 @@ namespace ocs2::legged_robot
             node_->declare_parameter("feet_force_threshold", feet_force_threshold_);
         }
         feet_force_threshold_ = node_->get_parameter("feet_force_threshold").as_double();
+
+        if (!node_->has_parameter("use_foot_force_contact")) {
+            node_->declare_parameter("use_foot_force_contact", use_foot_force_contact_);
+        }
+        use_foot_force_contact_ = node_->get_parameter("use_foot_force_contact").as_bool();
     }
 
     void StateEstimateBase::updateJointStates()
@@ -43,11 +48,15 @@ namespace ocs2::legged_robot
 
     void StateEstimateBase::updateContact()
     {
-        const size_t size = ctrl_component_.foot_force_state_interface_.size();
-        for (int i = 0; i < size; i++)
-        {
-            contact_flag_[i] = ctrl_component_.foot_force_state_interface_[i].get().get_value() >
-                feet_force_threshold_;
+        if (use_foot_force_contact_) {
+            const size_t size = ctrl_component_.foot_force_state_interface_.size();
+            for (int i = 0; i < size && i < contact_flag_.size(); i++) {
+                contact_flag_[i] = ctrl_component_.foot_force_state_interface_[i].get().get_value() > feet_force_threshold_;
+            }
+        } else {
+            for (size_t i = 0; i < contact_flag_.size(); ++i) {
+                contact_flag_[i] = true;
+            }
         }
     }
 

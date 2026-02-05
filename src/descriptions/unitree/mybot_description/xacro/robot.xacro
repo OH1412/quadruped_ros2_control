@@ -27,8 +27,8 @@
     <xacro:include filename="$(find mybot_description)/xacro/ros2_control.xacro"/>
   </xacro:unless>
 
-  <!-- 网格文件路径 -->
-  <xacro:property name="mesh_path" value="$(find mybot_description)/meshes"/>
+  <!-- 网格文件路径（使用 package:// 以兼容资源检索） -->
+  <xacro:property name="mesh_path" value="package://mybot_description/meshes"/>
 
   <!-- Debug 模式：固定机器人到世界坐标系 -->
   <xacro:if value="$(arg DEBUG)">
@@ -44,14 +44,14 @@
   <xacro:mybot_body mesh_path="${mesh_path}"/>
 
   <!-- IMU 传感器 -->
-  <xacro:IMU connected_to="body" imu_name="base_imu" xyz="0 0 0" rpy="0 0 0"/>
+  <xacro:IMU connected_to="trunk" imu_name="base_imu" xyz="0 0 0" rpy="0 0 0"/>
 
   <!-- 前置相机 (可选) -->
   <xacro:if value="$(arg USE_CAMERA)">
     <joint name="camera_joint_front" type="fixed">
-      <parent link="body"/>
+      <parent link="trunk"/>
       <child link="front_camera"/>
-      <origin rpy="0 0 0" xyz="0.15 0 0.05"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
     </joint>
     <link name="front_camera">
       <inertial>
@@ -72,9 +72,9 @@
   <!-- LIDAR 传感器 (可选) -->
   <xacro:if value="$(arg USE_LIDAR)">
     <joint name="lidar_joint" type="fixed">
-      <parent link="body"/>
+      <parent link="trunk"/>
       <child link="lidar"/>
-      <origin rpy="0 0 0" xyz="0 0 0.1"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
     </joint>
     <link name="lidar">
       <inertial>

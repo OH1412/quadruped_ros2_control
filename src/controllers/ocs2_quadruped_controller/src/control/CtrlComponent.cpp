@@ -20,6 +20,7 @@
 #include <ocs2_quadruped_controller/perceptive/interface/PerceptiveLeggedReferenceManager.h>
 #include <ocs2_quadruped_controller/perceptive/synchronize/PlanarTerrainReceiver.h>
 #include <ocs2_sqp/SqpMpc.h>
+#include <ocs2_legged_robot/gait/MotionPhaseDefinition.h>
 
 namespace ocs2::legged_robot
 {
@@ -107,7 +108,13 @@ namespace ocs2::legged_robot
         observation_.state = rbd_conversions_->computeCentroidalStateFromRbdModel(measured_rbd_state_);
         observation_.state(9) = yaw_last + angles::shortest_angular_distance(
             yaw_last, observation_.state(9));
-        observation_.mode = estimator_->getMode();
+        // Derive mode from the gait schedule instead of foot-force contact.
+        // This decouples contact mode from tactile sensors when disabled.
+        {
+            // Using the switched model reference manager to get planned contact flags
+            auto flags = legged_interface_->getSwitchedModelReferenceManagerPtr()->getContactFlags(observation_.time);
+            observation_.mode = stanceLeg2ModeNumber(flags);
+        }
 
         visualizer_->update(observation_);
         if (enable_perceptive_)

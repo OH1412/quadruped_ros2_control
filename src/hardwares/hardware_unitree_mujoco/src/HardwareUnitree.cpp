@@ -6,14 +6,7 @@
 
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
-
-#include "crc32.h"
-
-#define TOPIC_LOWCMD "rt/lowcmd"
-#define TOPIC_LOWSTATE "rt/lowstate"
-#define TOPIC_HIGHSTATE "rt/sportmodestate"
-
-using namespace unitree::robot;
+#include <unordered_map>
 using hardware_interface::return_type;
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn HardwareUnitree::on_init(
@@ -47,50 +40,98 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn Hardwa
     }
 
 
-    if (const auto network_interface_param = info.hardware_parameters.find("network_interface"); network_interface_param
-        != info.hardware_parameters.end())
-    {
-        network_interface_ = network_interface_param->second;
-    }
-    if (const auto domain_param = info.hardware_parameters.find("domain"); domain_param != info.hardware_parameters.
-        end())
-    {
-        domain_ = std::stoi(domain_param->second);
-    }
     if (const auto show_foot_force_param = info.hardware_parameters.find("show_foot_force"); show_foot_force_param !=
         info.hardware_parameters.end())
     {
         show_foot_force_ = show_foot_force_param->second == "true";
     }
+    if (const auto param = info.hardware_parameters.find("state_joint_topic");
+        param != info.hardware_parameters.end())
+    {
+        state_joint_topic_ = param->second;
+    }
+    if (const auto param = info.hardware_parameters.find("state_imu_topic");
+        param != info.hardware_parameters.end())
+    {
+        state_imu_topic_ = param->second;
+    }
+    if (const auto param = info.hardware_parameters.find("state_foot_force_topic");
+        param != info.hardware_parameters.end())
+    {
+        state_foot_force_topic_ = param->second;
+    }
+    if (const auto param = info.hardware_parameters.find("state_odometry_topic");
+        param != info.hardware_parameters.end())
+    {
+        state_odometry_topic_ = param->second;
+    }
+    if (const auto param = info.hardware_parameters.find("command_joint_topic");
+        param != info.hardware_parameters.end())
+    {
+        command_joint_topic_ = param->second;
+    }
+    if (const auto param = info.hardware_parameters.find("command_kp_topic");
+        param != info.hardware_parameters.end())
+    {
+        command_kp_topic_ = param->second;
+    }
+    if (const auto param = info.hardware_parameters.find("command_kd_topic");
+        param != info.hardware_parameters.end())
+    {
+        command_kd_topic_ = param->second;
+    }
+    if (const auto param = info.hardware_parameters.find("unitree_command_topic");
+        param != info.hardware_parameters.end())
+    {
+        unitree_command_topic_ = param->second;
+    }
 
-    RCLCPP_INFO(rclcpp::get_logger("unitree_hardware"), " network_interface: %s, domain: %d", network_interface_.c_str(), domain_);
-    ChannelFactory::Instance()->Init(domain_, network_interface_);
+    // Single ROS node for all topic IO (states in, commands out).
+    io_node_ = std::make_shared<rclcpp::Node>("unitree_ros_topic_io");
+    executor_.add_node(io_node_);
 
-    low_cmd_publisher_ =
-        std::make_shared<ChannelPublisher<unitree_go::msg::dds_::LowCmd_>>(
-            TOPIC_LOWCMD);
-    low_cmd_publisher_->InitChannel();
-
-    lows_tate_subscriber_ =
-        std::make_shared<ChannelSubscriber<unitree_go::msg::dds_::LowState_>>(
-            TOPIC_LOWSTATE);
-    lows_tate_subscriber_->InitChannel(
-        [this](auto&& PH1)
+    // Cache latest state messages for read() to map into ros2_control interfaces.
+    joint_state_sub_ = io_node_->create_subscription<sensor_msgs::msg::JointState>(
+        state_joint_topic_, rclcpp::SensorDataQoS(),
+        [this](sensor_msgs::msg::JointState::SharedPtr msg)
         {
-            lowStateMessageHandle(std::forward<decltype(PH1)>(PH1));
-        },
-        1);
-    initLowCmd();
-
-    high_state_subscriber_ =
-        std::make_shared<ChannelSubscriber<unitree_go::msg::dds_::SportModeState_>>(
-            TOPIC_HIGHSTATE);
-    high_state_subscriber_->InitChannel(
-        [this](auto&& PH1)
+            latest_joint_state_ = std::move(msg);
+        });
+    imu_sub_ = io_node_->create_subscription<sensor_msgs::msg::Imu>(
+        state_imu_topic_, rclcpp::SensorDataQoS(),
+        [this](sensor_msgs::msg::Imu::SharedPtr msg)
         {
-            highStateMessageHandle(std::forward<decltype(PH1)>(PH1));
-        },
-        1);
+            latest_imu_msg_ = std::move(msg);
+        });
+    foot_force_sub_ = io_node_->create_subscription<std_msgs::msg::Float32MultiArray>(
+        state_foot_force_topic_, rclcpp::SensorDataQoS(),
+        [this](std_msgs::msg::Float32MultiArray::SharedPtr msg)
+        {
+            latest_foot_force_ = std::move(msg);
+        });
+    odom_sub_ = io_node_->create_subscription<nav_msgs::msg::Odometry>(
+        state_odometry_topic_, rclcpp::SensorDataQoS(),
+        [this](nav_msgs::msg::Odometry::SharedPtr msg)
+        {
+            latest_odom_ = std::move(msg);
+        });
+
+    // Publish outgoing command topics for a ROS-only actuator layer.
+    joint_cmd_pub_ = io_node_->create_publisher<sensor_msgs::msg::JointState>(
+        command_joint_topic_, rclcpp::SensorDataQoS());
+    kp_pub_ = io_node_->create_publisher<std_msgs::msg::Float32MultiArray>(
+        command_kp_topic_, rclcpp::SensorDataQoS());
+    kd_pub_ = io_node_->create_publisher<std_msgs::msg::Float32MultiArray>(
+        command_kd_topic_, rclcpp::SensorDataQoS());
+    unitree_cmd_pub_ = io_node_->create_publisher<control_input_msgs::msg::UnitreeCommand>(
+        unitree_command_topic_, rclcpp::SensorDataQoS());
+
+    RCLCPP_INFO(
+        rclcpp::get_logger("unitree_hardware"),
+        "ROS topic IO configured: joint=%s imu=%s foot_force=%s odom=%s cmd_joint=%s kp=%s kd=%s",
+        state_joint_topic_.c_str(), state_imu_topic_.c_str(), state_foot_force_topic_.c_str(),
+        state_odometry_topic_.c_str(), command_joint_topic_.c_str(), command_kp_topic_.c_str(),
+        command_kd_topic_.c_str());
 
 
     return SystemInterface::on_init(info);
@@ -180,31 +221,99 @@ std::vector<hardware_interface::CommandInterface> HardwareUnitree::export_comman
 
 return_type HardwareUnitree::read(const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/)
 {
-    // joint states
-    for (int i(0); i < 12; ++i)
+    // Update cached ROS messages before mapping into state interfaces.
+    executor_.spin_some();
+
+    if (latest_joint_state_)
     {
-        joint_position_[i] = low_state_.motor_state()[i].q();
-        joint_velocities_[i] = low_state_.motor_state()[i].dq();
-        joint_effort_[i] = low_state_.motor_state()[i].tau_est();
+        const auto& msg = *latest_joint_state_;
+        if (!msg.name.empty())
+        {
+            // Name-based mapping to keep joint order stable.
+            std::unordered_map<std::string, size_t> index_by_name;
+            index_by_name.reserve(msg.name.size());
+            for (size_t i = 0; i < msg.name.size(); ++i)
+            {
+                index_by_name[msg.name[i]] = i;
+            }
+
+            int ind = 0;
+            for (const auto& joint_name : joint_interfaces["position"])
+            {
+                const auto it = index_by_name.find(joint_name);
+                if (it != index_by_name.end() && it->second < msg.position.size())
+                {
+                    joint_position_[ind] = msg.position[it->second];
+                }
+                ++ind;
+            }
+
+            ind = 0;
+            for (const auto& joint_name : joint_interfaces["velocity"])
+            {
+                const auto it = index_by_name.find(joint_name);
+                if (it != index_by_name.end() && it->second < msg.velocity.size())
+                {
+                    joint_velocities_[ind] = msg.velocity[it->second];
+                }
+                ++ind;
+            }
+
+            ind = 0;
+            for (const auto& joint_name : joint_interfaces["effort"])
+            {
+                const auto it = index_by_name.find(joint_name);
+                if (it != index_by_name.end() && it->second < msg.effort.size())
+                {
+                    joint_effort_[ind] = msg.effort[it->second];
+                }
+                ++ind;
+            }
+        }
+        else
+        {
+            // Fallback to index-based mapping when names are missing.
+            const size_t count = std::min<size_t>(joint_position_.size(), msg.position.size());
+            for (size_t i = 0; i < count; ++i)
+            {
+                joint_position_[i] = msg.position[i];
+            }
+            const size_t vcount = std::min<size_t>(joint_velocities_.size(), msg.velocity.size());
+            for (size_t i = 0; i < vcount; ++i)
+            {
+                joint_velocities_[i] = msg.velocity[i];
+            }
+            const size_t ecount = std::min<size_t>(joint_effort_.size(), msg.effort.size());
+            for (size_t i = 0; i < ecount; ++i)
+            {
+                joint_effort_[i] = msg.effort[i];
+            }
+        }
     }
 
-    // imu states
-    imu_states_[0] = low_state_.imu_state().quaternion()[0]; // w
-    imu_states_[1] = low_state_.imu_state().quaternion()[1]; // x
-    imu_states_[2] = low_state_.imu_state().quaternion()[2]; // y
-    imu_states_[3] = low_state_.imu_state().quaternion()[3]; // z
-    imu_states_[4] = low_state_.imu_state().gyroscope()[0];
-    imu_states_[5] = low_state_.imu_state().gyroscope()[1];
-    imu_states_[6] = low_state_.imu_state().gyroscope()[2];
-    imu_states_[7] = low_state_.imu_state().accelerometer()[0];
-    imu_states_[8] = low_state_.imu_state().accelerometer()[1];
-    imu_states_[9] = low_state_.imu_state().accelerometer()[2];
+    // IMU states from ROS topic
+    if (latest_imu_msg_)
+    {
+        imu_states_[0] = latest_imu_msg_->orientation.w; // w
+        imu_states_[1] = latest_imu_msg_->orientation.x; // x
+        imu_states_[2] = latest_imu_msg_->orientation.y; // y
+        imu_states_[3] = latest_imu_msg_->orientation.z; // z
+        imu_states_[4] = latest_imu_msg_->angular_velocity.x;
+        imu_states_[5] = latest_imu_msg_->angular_velocity.y;
+        imu_states_[6] = latest_imu_msg_->angular_velocity.z;
+        imu_states_[7] = latest_imu_msg_->linear_acceleration.x;
+        imu_states_[8] = latest_imu_msg_->linear_acceleration.y;
+        imu_states_[9] = latest_imu_msg_->linear_acceleration.z;
+    }
 
-    // contact states
-    foot_force_[0] = low_state_.foot_force()[0];
-    foot_force_[1] = low_state_.foot_force()[1];
-    foot_force_[2] = low_state_.foot_force()[2];
-    foot_force_[3] = low_state_.foot_force()[3];
+    // Foot force vector (FL, RL, FR, RR) from ROS topic.
+    if (latest_foot_force_ && latest_foot_force_->data.size() >= 4)
+    {
+        foot_force_[0] = latest_foot_force_->data[0];
+        foot_force_[1] = latest_foot_force_->data[1];
+        foot_force_[2] = latest_foot_force_->data[2];
+        foot_force_[3] = latest_foot_force_->data[3];
+    }
 
     if (show_foot_force_)
     {
@@ -212,13 +321,16 @@ return_type HardwareUnitree::read(const rclcpp::Time& /*time*/, const rclcpp::Du
                     foot_force_[3]);
     }
 
-    // high states
-    high_states_[0] = high_state_.position()[0];
-    high_states_[1] = high_state_.position()[1];
-    high_states_[2] = high_state_.position()[2];
-    high_states_[3] = high_state_.velocity()[0];
-    high_states_[4] = high_state_.velocity()[1];
-    high_states_[5] = high_state_.velocity()[2];
+    // Odometer states mapped from nav_msgs/Odometry.
+    if (latest_odom_)
+    {
+        high_states_[0] = latest_odom_->pose.pose.position.x;
+        high_states_[1] = latest_odom_->pose.pose.position.y;
+        high_states_[2] = latest_odom_->pose.pose.position.z;
+        high_states_[3] = latest_odom_->twist.twist.linear.x;
+        high_states_[4] = latest_odom_->twist.twist.linear.y;
+        high_states_[5] = latest_odom_->twist.twist.linear.z;
+    }
 
     // RCLCPP_INFO(get_logger(), "high state: %f %f %f %f %f %f", high_states_[0], high_states_[1], high_states_[2],
     //             high_states_[3], high_states_[4], high_states_[5]);
@@ -228,50 +340,41 @@ return_type HardwareUnitree::read(const rclcpp::Time& /*time*/, const rclcpp::Du
 
 return_type HardwareUnitree::write(const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/)
 {
-    // send command
-    for (int i(0); i < 12; ++i)
+    // Publish joint commands and gains for a ROS-only actuator interface.
+    if (joint_cmd_pub_)
     {
-        low_cmd_.motor_cmd()[i].mode() = 0x01;
-        low_cmd_.motor_cmd()[i].q() = static_cast<float>(joint_position_command_[i]);
-        low_cmd_.motor_cmd()[i].dq() = static_cast<float>(joint_velocities_command_[i]);
-        low_cmd_.motor_cmd()[i].kp() = static_cast<float>(joint_kp_command_[i]);
-        low_cmd_.motor_cmd()[i].kd() = static_cast<float>(joint_kd_command_[i]);
-        low_cmd_.motor_cmd()[i].tau() = static_cast<float>(joint_torque_command_[i]);
+        sensor_msgs::msg::JointState cmd_msg;
+        cmd_msg.name = joint_interfaces["position"];
+        cmd_msg.position = joint_position_command_;
+        cmd_msg.velocity = joint_velocities_command_;
+        cmd_msg.effort = joint_torque_command_;
+        joint_cmd_pub_->publish(cmd_msg);
     }
-
-    low_cmd_.crc() = crc32_core(reinterpret_cast<uint32_t*>(&low_cmd_),
-                                (sizeof(unitree_go::msg::dds_::LowCmd_) >> 2) - 1);
-    low_cmd_publisher_->Write(low_cmd_);
+    if (kp_pub_)
+    {
+        std_msgs::msg::Float32MultiArray msg;
+        msg.data.assign(joint_kp_command_.begin(), joint_kp_command_.end());
+        kp_pub_->publish(msg);
+    }
+    if (kd_pub_)
+    {
+        std_msgs::msg::Float32MultiArray msg;
+        msg.data.assign(joint_kd_command_.begin(), joint_kd_command_.end());
+        kd_pub_->publish(msg);
+    }
+    // Publish combined UnitreeCommand message
+    if (unitree_cmd_pub_)
+    {
+        control_input_msgs::msg::UnitreeCommand ucmd;
+        // Copy vectors into fixed-size arrays
+        for (size_t i = 0; i < 12 && i < joint_position_command_.size(); ++i) ucmd.q_des[i] = joint_position_command_[i];
+        for (size_t i = 0; i < 12 && i < joint_velocities_command_.size(); ++i) ucmd.dq_des[i] = joint_velocities_command_[i];
+        for (size_t i = 0; i < 12 && i < joint_torque_command_.size(); ++i) ucmd.tau_ff[i] = joint_torque_command_[i];
+        for (size_t i = 0; i < 12 && i < joint_kp_command_.size(); ++i) ucmd.kp[i] = joint_kp_command_[i];
+        for (size_t i = 0; i < 12 && i < joint_kd_command_.size(); ++i) ucmd.kd[i] = joint_kd_command_[i];
+        unitree_cmd_pub_->publish(ucmd);
+    }
     return return_type::OK;
-}
-
-void HardwareUnitree::initLowCmd()
-{
-    low_cmd_.head()[0] = 0xFE;
-    low_cmd_.head()[1] = 0xEF;
-    low_cmd_.level_flag() = 0xFF;
-    low_cmd_.gpio() = 0;
-
-    for (int i = 0; i < 20; i++)
-    {
-        low_cmd_.motor_cmd()[i].mode() =
-            0x01; // motor switch to servo (PMSM) mode
-        low_cmd_.motor_cmd()[i].q() = 0;
-        low_cmd_.motor_cmd()[i].kp() = 0;
-        low_cmd_.motor_cmd()[i].dq() = 0;
-        low_cmd_.motor_cmd()[i].kd() = 0;
-        low_cmd_.motor_cmd()[i].tau() = 0;
-    }
-}
-
-void HardwareUnitree::lowStateMessageHandle(const void* messages)
-{
-    low_state_ = *static_cast<const unitree_go::msg::dds_::LowState_*>(messages);
-}
-
-void HardwareUnitree::highStateMessageHandle(const void* messages)
-{
-    high_state_ = *static_cast<const unitree_go::msg::dds_::SportModeState_*>(messages);
 }
 
 #include "pluginlib/class_list_macros.hpp"
