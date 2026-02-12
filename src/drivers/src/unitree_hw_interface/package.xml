@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>unitree_hw_interface</name>
+  <version>0.0.1</version>
+  <description>ROS2 hardware_interface for Unitree GO-M8010-6 dual 485 buses.</description>
+  <maintainer email="user@example.com">user</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>hardware_interface</depend>
+  <depend>pluginlib</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>unitree_motor_msgs</depend>
+
+  <export>
+    <hardware_interface plugin="unitree_hw_interface.xml"/>
+  </export>
+</package>

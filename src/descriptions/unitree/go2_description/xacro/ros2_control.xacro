@@ -7,7 +7,9 @@
 			<plugin>hardware_unitree_mujoco/HardwareUnitree</plugin>
 			<!-- All IO via ROS topics (DDS-free) -->
 			<param name="state_joint_topic">/joint_states</param>
-			<param name="state_imu_topic">/imu</param>
+			<param name="state_imu_topic">/livox/imu</param>
+			<!-- IMU acceleration is provided in g; convert to m/s^2 in hardware -->
+			<param name="imu_linear_accel_in_g">true</param>
 			<param name="state_foot_force_topic">/foot_force</param>
 			<param name="state_odometry_topic">/odometry</param>
 			<param name="command_joint_topic">/joint_command</param>
@@ -87,42 +89,6 @@
 			<state_interface name="effort"/>
 		</joint>
 
-		<joint name="RR_hip_joint">
-			<command_interface name="position"/>
-			<command_interface name="velocity"/>
-			<command_interface name="effort"/>
-			<command_interface name="kp"/>
-			<command_interface name="kd"/>
-
-			<state_interface name="position"/>
-			<state_interface name="velocity"/>
-			<state_interface name="effort"/>
-		</joint>
-
-		<joint name="RR_thigh_joint">
-			<command_interface name="position"/>
-			<command_interface name="velocity"/>
-			<command_interface name="effort"/>
-			<command_interface name="kp"/>
-			<command_interface name="kd"/>
-
-			<state_interface name="position"/>
-			<state_interface name="velocity"/>
-			<state_interface name="effort"/>
-		</joint>
-
-		<joint name="RR_calf_joint">
-			<command_interface name="position"/>
-			<command_interface name="velocity"/>
-			<command_interface name="effort"/>
-			<command_interface name="kp"/>
-			<command_interface name="kd"/>
-
-			<state_interface name="position"/>
-			<state_interface name="velocity"/>
-			<state_interface name="effort"/>
-		</joint>
-
 		<joint name="RL_hip_joint">
 			<command_interface name="position"/>
 			<command_interface name="velocity"/>
@@ -148,6 +114,42 @@
 		</joint>
 
 		<joint name="RL_calf_joint">
+			<command_interface name="position"/>
+			<command_interface name="velocity"/>
+			<command_interface name="effort"/>
+			<command_interface name="kp"/>
+			<command_interface name="kd"/>
+
+			<state_interface name="position"/>
+			<state_interface name="velocity"/>
+			<state_interface name="effort"/>
+		</joint>
+
+		<joint name="RR_hip_joint">
+			<command_interface name="position"/>
+			<command_interface name="velocity"/>
+			<command_interface name="effort"/>
+			<command_interface name="kp"/>
+			<command_interface name="kd"/>
+
+			<state_interface name="position"/>
+			<state_interface name="velocity"/>
+			<state_interface name="effort"/>
+		</joint>
+
+		<joint name="RR_thigh_joint">
+			<command_interface name="position"/>
+			<command_interface name="velocity"/>
+			<command_interface name="effort"/>
+			<command_interface name="kp"/>
+			<command_interface name="kd"/>
+
+			<state_interface name="position"/>
+			<state_interface name="velocity"/>
+			<state_interface name="effort"/>
+		</joint>
+
+		<joint name="RR_calf_joint">
 			<command_interface name="position"/>
 			<command_interface name="velocity"/>
 			<command_interface name="effort"/>

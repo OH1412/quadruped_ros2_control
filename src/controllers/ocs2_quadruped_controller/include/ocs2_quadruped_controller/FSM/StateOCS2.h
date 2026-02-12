@@ -48,8 +48,8 @@ namespace ocs2::legged_robot
         std::shared_ptr<SafetyChecker> safety_checker_;
         benchmark::RepeatedTimer wbc_timer_;
 
-        double default_kp_ = 0;
-        double default_kd_ = 6;
+        double default_kp_ = 0.1;
+        double default_kd_ = 0.05;
 
         vector_t optimized_state_, optimized_input_;
     };

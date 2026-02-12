@@ -13,7 +13,7 @@
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <std_msgs/msg/float32_multi_array.hpp>
-#include <control_input_msgs/msg/unitree_command.hpp>
+#include <unitree_motor_msgs/msg/unitree_command.hpp>
 
 class HardwareUnitree final : public hardware_interface::SystemInterface {
 public:
@@ -42,6 +42,9 @@ protected:
     std::vector<double> foot_force_;
     std::vector<double> high_states_;
 
+    // IMU acceleration unit handling: if true, treat input linear_acceleration as g and convert to m/s^2
+    bool imu_linear_accel_in_g_ = false;
+
     std::unordered_map<std::string, std::vector<std::string> > joint_interfaces = {
         {"position", {}},
         {"velocity", {}},
@@ -69,7 +72,7 @@ protected:
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_cmd_pub_;
     rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr kp_pub_;
     rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr kd_pub_;
-    rclcpp::Publisher<control_input_msgs::msg::UnitreeCommand>::SharedPtr unitree_cmd_pub_;
+    rclcpp::Publisher<unitree_motor_msgs::msg::UnitreeCommand>::SharedPtr unitree_cmd_pub_;
 
     sensor_msgs::msg::JointState::SharedPtr latest_joint_state_;
     sensor_msgs::msg::Imu::SharedPtr latest_imu_msg_;

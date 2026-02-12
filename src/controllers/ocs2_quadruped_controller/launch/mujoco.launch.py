@@ -6,8 +6,11 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction, IncludeLaunchDescription, RegisterEventHandler
 from launch.event_handlers import OnProcessExit
 from launch.substitutions import PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration
+from launch.conditions import IfCondition
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 package_controller = "ocs2_quadruped_controller"
 package_hardware = "hardware_unitree_mujoco"
@@ -29,6 +32,35 @@ def launch_setup(context, *args, **kwargs):
 
     rviz_config_file = os.path.join(get_package_share_directory(package_controller), "config", "visualize_ocs2.rviz")
 
+    # 1) Livox driver (MID360) - try multiple likely locations
+    livox_launch_path = None
+    try:
+        livox_share = get_package_share_directory('livox_ros_driver2')
+    except Exception:
+        livox_share = None
+
+    candidates = []
+    if livox_share:
+        # Non-standard folder used by some repos
+        candidates.append(os.path.join(livox_share, 'launch_ROS2', 'msg_MID360_launch.py'))
+        # Standard launch folder
+        candidates.append(os.path.join(livox_share, 'launch', 'msg_MID360_launch.py'))
+
+    for p in candidates:
+        if os.path.exists(p):
+            livox_launch_path = p
+            break
+
+    if livox_launch_path is None:
+        raise FileNotFoundError('Cannot find Livox MID360 launch file. Tried:\n' + '\n'.join(candidates))
+
+    start_livox = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(livox_launch_path),
+        # Pass-through args if needed in the future
+        # Currently msg_MID360_launch.py usually does not consume use_sim_time
+        launch_arguments={}.items(),
+    )
+
     # Start DDS↔ROS bridge to convert Mujoco/real-robot DDS to ROS topics
     unitree_bridge = Node(
         package=package_hardware,
@@ -37,8 +69,11 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             {'network_interface': 'lo'},  # Use localhost for Mujoco simulation
             {'domain': 1},
+            {'state_imu_topic': '/livox/imu'},  # Publish IMU on /livox/imu
         ],
         output='screen',
+        # Allow disabling the bridge via launch arg
+        condition=IfCondition(LaunchConfiguration('enable_bridge')),
     )
 
     rviz = Node(
@@ -94,7 +129,8 @@ def launch_setup(context, *args, **kwargs):
     )
 
     return [
-        unitree_bridge,  # Start bridge first to publish DDS data as ROS topics
+        start_livox,     # Start Livox driver first so IMU/LiDAR topics are ready
+        unitree_bridge,  # Start bridge to publish DDS data as ROS topics
         rviz,
         robot_state_publisher,
         controller_manager,
@@ -121,7 +157,15 @@ def generate_launch_description():
         description='package for robot description'
     )
 
+    # Control whether to start the Unitree DDS↔ROS bridge
+    enable_bridge = DeclareLaunchArgument(
+        'enable_bridge',
+        default_value='false',
+        description='Enable Unitree DDS↔ROS bridge (true/false)'
+    )
+
     return LaunchDescription([
         pkg_description,
+        enable_bridge,
         OpaqueFunction(function=launch_setup),
     ])

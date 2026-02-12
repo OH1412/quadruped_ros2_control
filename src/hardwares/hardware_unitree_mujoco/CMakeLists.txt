@@ -16,7 +16,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
         sensor_msgs
         std_msgs
         nav_msgs
-        control_input_msgs
+        unitree_motor_msgs
 )
 
 # find dependencies
@@ -97,7 +97,7 @@ if (BUILD_TESTING)
     ament_lint_auto_find_test_dependencies()
 endif ()
 
-ament_export_dependencies(${dependencies})
+ament_export_dependencies(${THIS_PACKAGE_INCLUDE_DEPENDS})
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
 install(

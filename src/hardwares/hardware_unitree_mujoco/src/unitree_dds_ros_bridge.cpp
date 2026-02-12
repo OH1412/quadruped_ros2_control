@@ -200,6 +200,10 @@ private:
         imu_msg.linear_acceleration.x = low_state_.imu_state().accelerometer()[0];
         imu_msg.linear_acceleration.y = low_state_.imu_state().accelerometer()[1];
         imu_msg.linear_acceleration.z = low_state_.imu_state().accelerometer()[2];
+        const double gravity = 9.80665;
+        imu_msg.linear_acceleration.x /= gravity;
+        imu_msg.linear_acceleration.y /= gravity;
+        imu_msg.linear_acceleration.z /= gravity;
         imu_pub_->publish(imu_msg);
 
         std_msgs::msg::Float32MultiArray foot_msg;

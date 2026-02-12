@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>unitree_controller</name>
+  <version>0.0.1</version>
+  <description>Python test node publishing 12-axis Unitree commands.</description>
+  <maintainer email="user@example.com">user</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>unitree_motor_msgs</depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

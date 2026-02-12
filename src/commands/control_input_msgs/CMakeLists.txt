@@ -4,7 +4,6 @@ project(control_input_msgs)
 find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/Inputs.msg"
-        "msg/UnitreeCommand.msg"
 )
 
 ament_package()

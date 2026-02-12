@@ -55,6 +55,11 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn Hardwa
     {
         state_imu_topic_ = param->second;
     }
+    if (const auto param = info.hardware_parameters.find("imu_linear_accel_in_g");
+        param != info.hardware_parameters.end())
+    {
+        imu_linear_accel_in_g_ = (param->second == "true" || param->second == "1");
+    }
     if (const auto param = info.hardware_parameters.find("state_foot_force_topic");
         param != info.hardware_parameters.end())
     {
@@ -123,7 +128,7 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn Hardwa
         command_kp_topic_, rclcpp::SensorDataQoS());
     kd_pub_ = io_node_->create_publisher<std_msgs::msg::Float32MultiArray>(
         command_kd_topic_, rclcpp::SensorDataQoS());
-    unitree_cmd_pub_ = io_node_->create_publisher<control_input_msgs::msg::UnitreeCommand>(
+    unitree_cmd_pub_ = io_node_->create_publisher<unitree_motor_msgs::msg::UnitreeCommand>(
         unitree_command_topic_, rclcpp::SensorDataQoS());
 
     RCLCPP_INFO(
@@ -301,9 +306,20 @@ return_type HardwareUnitree::read(const rclcpp::Time& /*time*/, const rclcpp::Du
         imu_states_[4] = latest_imu_msg_->angular_velocity.x;
         imu_states_[5] = latest_imu_msg_->angular_velocity.y;
         imu_states_[6] = latest_imu_msg_->angular_velocity.z;
-        imu_states_[7] = latest_imu_msg_->linear_acceleration.x;
-        imu_states_[8] = latest_imu_msg_->linear_acceleration.y;
-        imu_states_[9] = latest_imu_msg_->linear_acceleration.z;
+        // Convert linear acceleration units if input is in g
+        const double ax = latest_imu_msg_->linear_acceleration.x;
+        const double ay = latest_imu_msg_->linear_acceleration.y;
+        const double az = latest_imu_msg_->linear_acceleration.z;
+        if (imu_linear_accel_in_g_) {
+            constexpr double G = 9.80665; // m/s^2 per g
+            imu_states_[7] = ax * G;
+            imu_states_[8] = ay * G;
+            imu_states_[9] = az * G;
+        } else {
+            imu_states_[7] = ax;
+            imu_states_[8] = ay;
+            imu_states_[9] = az;
+        }
     }
 
     // Foot force vector (FL, RL, FR, RR) from ROS topic.
@@ -365,7 +381,7 @@ return_type HardwareUnitree::write(const rclcpp::Time& /*time*/, const rclcpp::D
     // Publish combined UnitreeCommand message
     if (unitree_cmd_pub_)
     {
-        control_input_msgs::msg::UnitreeCommand ucmd;
+        unitree_motor_msgs::msg::UnitreeCommand ucmd;
         // Copy vectors into fixed-size arrays
         for (size_t i = 0; i < 12 && i < joint_position_command_.size(); ++i) ucmd.q_des[i] = joint_position_command_[i];
         for (size_t i = 0; i < 12 && i < joint_velocities_command_.size(); ++i) ucmd.dq_des[i] = joint_velocities_command_[i];

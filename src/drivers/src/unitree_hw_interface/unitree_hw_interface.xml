@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<library path="unitree_hw_interface">
+  <class
+    name="unitree_hw_interface/UnitreeHwInterface"
+    type="unitree_hw_interface::UnitreeHwInterface"
+    base_class_type="hardware_interface::SystemInterface">
+    <description>Unitree GO-M8010-6 dual-bus hardware interface.</description>
+  </class>
+</library>
