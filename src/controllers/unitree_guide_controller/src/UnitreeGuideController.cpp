@@ -11,6 +11,11 @@ namespace unitree_guide_controller
 {
     using config_type = controller_interface::interface_configuration_type;
 
+    // 声明需要的 command interfaces：
+    //   - 如果 command_prefix_ 非空：<command_prefix_>/<joint_name>/<interface_type>
+    //   - 否则：<joint_name>/<interface_type>
+    // 其中 interface_type 一般包括 {effort, position, velocity, kp, kd}，
+    //   最终在 on_activate() 中按名字映射到 ctrl_interfaces_.joint_*_command_interface_
     controller_interface::InterfaceConfiguration UnitreeGuideController::command_interface_configuration() const
     {
         controller_interface::InterfaceConfiguration conf = {config_type::INDIVIDUAL, {}};
@@ -34,6 +39,10 @@ namespace unitree_guide_controller
         return conf;
     }
 
+    // 声明需要的 state interfaces：
+    //   - 对于每个关节：<joint_name>/<state_interface_type>（如 position / velocity / effort）
+    //   - 对于 IMU：<imu_name_>/<imu_interface_type>
+    // 这些接口在 on_activate() 里被分类放入 ctrl_interfaces_.joint_*_state_interface_ 或 imu_state_interface_
     controller_interface::InterfaceConfiguration UnitreeGuideController::state_interface_configuration() const
     {
         controller_interface::InterfaceConfiguration conf = {config_type::INDIVIDUAL, {}};
@@ -55,6 +64,13 @@ namespace unitree_guide_controller
         return conf;
     }
 
+    // 主循环：
+    //   1. 调用 robot_model_->update() 更新关节/刚体状态；
+    //   2. 调用 wave_generator_->update() 更新步态相位（哪条腿支撑/摆动）；
+    //   3. 调用 estimator_->update() 更新机体位姿、速度、足端等估计；
+    //   4. 根据当前 FSMMode：
+    //        - NORMAL：当前状态 run() 生成新的关节命令，并根据 checkChange() 判断是否切换状态；
+    //        - CHANGE：执行当前状态 exit()，切到 next_state_，再执行其 enter()，然后回到 NORMAL。
     controller_interface::return_type UnitreeGuideController::
     update(const rclcpp::Time& time, const rclcpp::Duration& period)
     {
@@ -66,6 +82,7 @@ namespace unitree_guide_controller
         // update_frequency_ = 1.0 / time_diff.count();
         // RCLCPP_INFO(get_node()->get_logger(), "Update frequency: %f Hz", update_frequency_);
 
+        // 若还没收到 /robot_description 创建 QuadrupedRobot，则不做控制
         if (ctrl_component_.robot_model_ == nullptr)
         {
             return controller_interface::return_type::OK;
@@ -99,6 +116,10 @@ namespace unitree_guide_controller
         return controller_interface::return_type::OK;
     }
 
+    // on_init：
+    //   - 从参数服务器读取关节名、接口类型、IMU/base 名称、足端名等；
+    //   - 读取/声明站立、下蹲姿态和对应的 PD 增益；
+    //   - 创建 Estimator 实例（其他组件在 on_configure/on_activate 里创建）。
     controller_interface::CallbackReturn UnitreeGuideController::on_init()
     {
         try
@@ -109,7 +130,7 @@ namespace unitree_guide_controller
             state_interface_types_ =
                 auto_declare<std::vector<std::string>>("state_interfaces", state_interface_types_);
 
-            // imu sensor
+            // imu sensor / 机体/命名空间等配置
             imu_name_ = auto_declare<std::string>("imu_name", imu_name_);
             base_name_ = auto_declare<std::string>("base_name", base_name_);
             imu_interface_types_ = auto_declare<std::vector<std::string>>("imu_interfaces", state_interface_types_);
@@ -117,7 +138,7 @@ namespace unitree_guide_controller
             feet_names_ =
                 auto_declare<std::vector<std::string>>("feet_names", feet_names_);
 
-            // pose parameters
+            // pose parameters：默认站立/下蹲关节角与 PD 增益
             down_pos_ = auto_declare<std::vector<double>>("down_pos", down_pos_);
             stand_pos_ = auto_declare<std::vector<double>>("stand_pos", stand_pos_);
             stand_kp_ = auto_declare<double>("stand_kp", stand_kp_);
@@ -126,6 +147,7 @@ namespace unitree_guide_controller
             get_node()->get_parameter("update_rate", ctrl_interfaces_.frequency_);
             RCLCPP_INFO(get_node()->get_logger(), "Controller Manager Update Rate: %d Hz", ctrl_interfaces_.frequency_);
 
+            // 创建状态估计器，后续各 FSM 状态从 ctrl_component_.estimator_ 读取机体状态
             ctrl_component_.estimator_ = std::make_shared<Estimator>(ctrl_interfaces_, ctrl_component_);
         }
         catch (const std::exception& e)
@@ -137,6 +159,10 @@ namespace unitree_guide_controller
         return CallbackReturn::SUCCESS;
     }
 
+    // on_configure：
+    //   - 订阅 /control_input，将键盘/手柄/遥控器命令写入 ctrl_interfaces_.control_inputs_；
+    //   - 订阅 /robot_description，根据 URDF 创建 QuadrupedRobot 模型和 BalanceCtrl；
+    //   - 创建 WaveGenerator（指定步态周期和占空比）。
     controller_interface::CallbackReturn UnitreeGuideController::on_configure(
         const rclcpp_lifecycle::State& /*previous_state*/)
     {
@@ -151,6 +177,7 @@ namespace unitree_guide_controller
                 ctrl_interfaces_.control_inputs_.ry = msg->ry;
             });
 
+        // /robot_description 采用 transient_local QoS，确保晚加入时仍能收到一次完整 URDF
         robot_description_subscription_ = get_node()->create_subscription<std_msgs::msg::String>(
             "/robot_description", rclcpp::QoS(rclcpp::KeepLast(1)).transient_local(),
             [this](const std_msgs::msg::String::SharedPtr msg)
@@ -160,18 +187,28 @@ namespace unitree_guide_controller
                 ctrl_component_.balance_ctrl_ = std::make_shared<BalanceCtrl>(ctrl_component_.robot_model_);
             });
 
-        ctrl_component_.wave_generator_ = std::make_shared<WaveGenerator>(0.45, 0.5, Vec4(0, 0.5, 0.5, 0));
+        // 步态相位生成器：
+        //   - 周期 0.45s，占空比 0.5，四条腿相位为 {0, 0.5, 0.5, 0}
+        // 从参数读取步态设置
+        double gait_period = auto_declare<double>("gait_period", 0.45);
+        double gait_duty = auto_declare<double>("gait_duty", 0.5);
+        std::vector<double> gait_phases = auto_declare<std::vector<double>>("gait_phases", {0.0, 0.5, 0.5, 0.0});
+        ctrl_component_.wave_generator_ = std::make_shared<WaveGenerator>(gait_period, gait_duty, Vec4(gait_phases[0], gait_phases[1], gait_phases[2], gait_phases[3]));
 
         return CallbackReturn::SUCCESS;
     }
 
+    // on_activate：
+    //   - 将 ros2_control 注入的 loaned interfaces 整理填入 ctrl_interfaces_；
+    //   - 创建各个 FSM 状态实例（passive/fixed stand/trotting 等）；
+    //   - 设置初始状态为 PASSIVE 并调用其 enter()。
     controller_interface::CallbackReturn
     UnitreeGuideController::on_activate(const rclcpp_lifecycle::State& /*previous_state*/)
     {
         // clear out vectors in case of restart
         ctrl_interfaces_.clear();
 
-        // assign command interfaces
+        // 1) 绑定 command interfaces：根据接口名（字符串末尾）放入不同数组
         for (auto& interface : command_interfaces_)
         {
             std::string interface_name = interface.get_interface_name();
@@ -185,7 +222,7 @@ namespace unitree_guide_controller
             }
         }
 
-        // assign state interfaces
+        // 2) 绑定 state interfaces：IMU 单独处理，其余按接口名放入 map
         for (auto& interface : state_interfaces_)
         {
             if (interface.get_prefix_name() == imu_name_)
@@ -198,7 +235,7 @@ namespace unitree_guide_controller
             }
         }
 
-        // Create FSM List
+        // 3) 创建各个 FSM 状态实例
         state_list_.passive = std::make_shared<StatePassive>(ctrl_interfaces_);
         state_list_.fixedDown = std::make_shared<StateFixedDown>(ctrl_interfaces_, down_pos_, stand_kp_, stand_kd_);
         state_list_.fixedStand = std::make_shared<StateFixedStand>(ctrl_interfaces_, stand_pos_, stand_kp_, stand_kd_);
@@ -207,7 +244,7 @@ namespace unitree_guide_controller
         state_list_.balanceTest = std::make_shared<StateBalanceTest>(ctrl_interfaces_, ctrl_component_);
         state_list_.trotting = std::make_shared<StateTrotting>(ctrl_interfaces_, ctrl_component_);
 
-        // Initialize FSM
+        // 4) 初始化 FSM：从 PASSIVE 状态开始
         current_state_ = state_list_.passive;
         current_state_->enter();
         next_state_ = current_state_;

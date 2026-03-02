@@ -5,7 +5,8 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction, IncludeLaunchDescription, RegisterEventHandler
 from launch.event_handlers import OnProcessExit
-from launch.substitutions import PathJoinSubstitution
+from launch.conditions import IfCondition
+from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
@@ -13,6 +14,9 @@ from launch_ros.substitutions import FindPackageShare
 def launch_setup(context, *args, **kwargs):
     package_description = context.launch_configurations['pkg_description']
     pkg_path = os.path.join(get_package_share_directory(package_description))
+
+    package_controller = "rl_quadruped_controller"
+    package_hardware = "hardware_unitree_mujoco"
 
     xacro_file = os.path.join(pkg_path, 'xacro', 'robot.xacro')
     robot_description = xacro.process_file(xacro_file).toxml()
@@ -26,6 +30,20 @@ def launch_setup(context, *args, **kwargs):
     )
 
     rviz_config_file = os.path.join(get_package_share_directory(package_description), "config", "visualize_urdf.rviz")
+
+    # Start DDS↔ROS bridge to convert Mujoco/real-robot DDS to ROS topics
+    unitree_bridge = Node(
+        package=package_hardware,
+        executable='unitree_dds_ros_bridge',
+        name='unitree_dds_ros_bridge',
+        parameters=[
+            {'network_interface': 'lo'},  # Use localhost for Mujoco simulation
+            {'domain': 1},
+        ],
+        output='screen',
+        # Allow disabling the bridge via launch arg
+        condition=IfCondition(LaunchConfiguration('enable_bridge')),
+    )
 
     rviz = Node(
         package='rviz2',
@@ -80,6 +98,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     return [
+        unitree_bridge,  # Start bridge to publish DDS data as ROS topics
         rviz,
         robot_state_publisher,
         controller_manager,
@@ -106,7 +125,15 @@ def generate_launch_description():
         description='package for robot description'
     )
 
+    # Control whether to start the Unitree DDS↔ROS bridge
+    enable_bridge = DeclareLaunchArgument(
+        'enable_bridge',
+        default_value='false',
+        description='Enable Unitree DDS↔ROS bridge (true/false)'
+    )
+
     return LaunchDescription([
         pkg_description,
+        enable_bridge,
         OpaqueFunction(function=launch_setup),
     ])

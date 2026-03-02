@@ -1,42 +1,51 @@
 # Gazebo Quadruped Playground
 
-This folder contains the gazebo worlds and sensor models used for quadruped robot simulation.
+本包是 quadruped_ros2_control 工程中的 Gazebo 仿真场景与传感器集合，用于在多种环境（如空场、仓库等）下测试不同控制器、感知与导航算法。
 
-Tested environment:
+测试环境：
 
-* Ubuntu 24.04 【ROS2 Jazzy】
+* Ubuntu 24.04（ROS2 Jazzy）
 
-## Build
+## 编译
 
 ```bash
 cd ~/ros2_ws
 colcon build --packages-up-to gz_quadruped_playground --symlink-install
 ```
 
-## Launch Simulation
+## 启动仿真
 
-* Unitree Guide Controller
+* 搭配 Unitree Guide 控制器：
+
   ```bash
   source ~/ros2_ws/install/setup.bash
   ros2 launch gz_quadruped_playground gazebo.launch.py
   ```
+
+  使用仓库场景：
+
   ```bash
   source ~/ros2_ws/install/setup.bash
   ros2 launch gz_quadruped_playground gazebo.launch.py world:=warehouse
-   ```
-* OCS2 Quadruped Controller
+  ```
+
+* 搭配 OCS2 四足控制器：
+
   ```bash
   source ~/ros2_ws/install/setup.bash
   ros2 launch gz_quadruped_playground gazebo.launch.py controller:=ocs2
   ```
+
+  使用仓库场景：
+
   ```bash
   source ~/ros2_ws/install/setup.bash
   ros2 launch gz_quadruped_playground gazebo.launch.py controller:=ocs2 world:=warehouse
-   ```
+  ```
 
-## SLAM Test
+## SLAM 测试
 
-### Record Rosbag
+### 录制 rosbag
 
 ```bash
 cd ~/ros2_ws
@@ -50,7 +59,9 @@ source ~/ros2_ws/install/setup.bash
 ros2 launch gz_quadruped_playground fast_lio.launch.py
 ```
 
-## Related Materials
+## 相关资料
 
-* [Gazebo OdometryPublisher Plugin](https://gazebosim.org/api/sim/8/classgz_1_1sim_1_1systems_1_1OdometryPublisher.html#details)
-* [Gazebo Intel Realsense D435 RGBD camera](https://app.gazebosim.org/OpenRobotics/fuel/models/Intel%20RealSense%20D435)
+* Gazebo 里程计发布插件：
+  https://gazebosim.org/api/sim/8/classgz_1_1sim_1_1systems_1_1OdometryPublisher.html#details
+* Gazebo Intel RealSense D435 RGBD 相机模型：
+  https://app.gazebosim.org/OpenRobotics/fuel/models/Intel%20RealSense%20D435
