@@ -25,12 +25,16 @@ StateSwingTest::StateSwingTest(CtrlInterfaces &ctrl_interfaces,
 
 void StateSwingTest::enter() {
     for (int i = 0; i < 3; i++) {
-        ctrl_interfaces_.joint_kp_command_interface_[i].get().set_value(3);
-        ctrl_interfaces_.joint_kd_command_interface_[i].get().set_value(2);
+        const double kp_small = ctrl_interfaces_.use_sim_kp_kd_ ? 3.0 : (3.0 / 40.0);
+        const double kd_small = ctrl_interfaces_.use_sim_kp_kd_ ? 2.0 : (2.0 / 40.0);
+        ctrl_interfaces_.joint_kp_command_interface_[i].get().set_value(kp_small);
+        ctrl_interfaces_.joint_kd_command_interface_[i].get().set_value(kd_small);
     }
     for (int i = 3; i < 12; i++) {
-        ctrl_interfaces_.joint_kp_command_interface_[i].get().set_value(180);
-        ctrl_interfaces_.joint_kd_command_interface_[i].get().set_value(5);
+        const double kp_big = ctrl_interfaces_.use_sim_kp_kd_ ? 180.0 : (180.0 / 40.0);
+        const double kd_big = ctrl_interfaces_.use_sim_kp_kd_ ? 5.0 : (5.0 / 40.0);
+        ctrl_interfaces_.joint_kp_command_interface_[i].get().set_value(kp_big);
+        ctrl_interfaces_.joint_kd_command_interface_[i].get().set_value(kd_big);
     }
 
     Kp = KDL::Vector(20, 20, 50);

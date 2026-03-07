@@ -44,15 +44,22 @@ def generate_launch_description():
         default_value='True',
         description='Whether to respawn if a node crashes. Applied when composition is disabled.')
 
+    log_level_arg = DeclareLaunchArgument(
+        'log_level',
+        default_value='warn',
+        description='ros2 log level for fast_livo node')
+
     avia_params_file = LaunchConfiguration('avia_params_file')
     camera_params_file = LaunchConfiguration('camera_params_file')
     use_respawn = LaunchConfiguration('use_respawn')
+    log_level = LaunchConfiguration('log_level')
 
     return LaunchDescription([
         use_rviz_arg,
         avia_config_arg,
         camera_config_arg,
         use_respawn_arg,
+        log_level_arg,
 
         # play ros2 bag
         # ExecuteProcess(
@@ -87,6 +94,7 @@ def generate_launch_description():
                 avia_params_file,
                 camera_params_file,
             ],
+            arguments=['--ros-args', '--log-level', log_level],
             # https://docs.ros.org/en/humble/How-To-Guides/Getting-Backtraces-in-ROS-2.html
             prefix=[
                 # ("gdb -ex run --args"),

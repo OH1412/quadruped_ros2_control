@@ -27,6 +27,7 @@
       lidar_type: 1 # Livox Avia LiDAR
       scan_line: 4
       blind: 0.5
+      scan_rate: 10
 
     vio:
       max_iterations: 5
@@ -64,7 +65,7 @@
       sliding_thresh: 8.0
 
     uav:
-      imu_rate_odom: false
+      imu_rate_odom: true
       gravity_align_en: true
 
     publish:

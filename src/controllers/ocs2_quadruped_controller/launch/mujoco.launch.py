@@ -22,6 +22,11 @@ def launch_setup(context, *args, **kwargs):
     xacro_file = os.path.join(pkg_path, 'xacro', 'robot.xacro')
     robot_description = xacro.process_file(xacro_file).toxml()
 
+    joint_names = ['FR_hip_joint', 'FR_thigh_joint', 'FR_calf_joint',
+                   'FL_hip_joint', 'FL_thigh_joint', 'FL_calf_joint',
+                   'RR_hip_joint', 'RR_thigh_joint', 'RR_calf_joint',
+                   'RL_hip_joint', 'RL_thigh_joint', 'RL_calf_joint']
+
     robot_controllers = PathJoinSubstitution(
         [
             FindPackageShare(package_description),
@@ -74,6 +79,20 @@ def launch_setup(context, *args, **kwargs):
         output='screen',
         # Allow disabling the bridge via launch arg
         condition=IfCondition(LaunchConfiguration('enable_bridge')),
+    )
+
+    # Optional Standard Bridge to convert DDS topics to standard ROS2 interfaces
+    standard_bridge = Node(
+        package='unitree_ros2_example',
+        executable='standard_bridge',
+        name='standard_bridge',
+        parameters=[
+            {'network_interface': 'lo'},
+            {'domain': 1},
+            {'joint_names': joint_names},
+        ],
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('enable_standard_bridge')),
     )
 
     rviz = Node(
@@ -131,6 +150,7 @@ def launch_setup(context, *args, **kwargs):
     return [
         start_livox,     # Start Livox driver first so IMU/LiDAR topics are ready
         unitree_bridge,  # Start bridge to publish DDS data as ROS topics
+        standard_bridge,  # Optional standard bridge for ROS-friendly topics
         rviz,
         robot_state_publisher,
         controller_manager,
@@ -164,8 +184,16 @@ def generate_launch_description():
         description='Enable Unitree DDS↔ROS bridge (true/false)'
     )
 
+    # Control whether to start the Standard Bridge
+    enable_standard_bridge = DeclareLaunchArgument(
+        'enable_standard_bridge',
+        default_value='false',
+        description='Enable Standard Bridge for DDS to ROS2 topics (true/false)'
+    )
+
     return LaunchDescription([
         pkg_description,
         enable_bridge,
+        enable_standard_bridge,
         OpaqueFunction(function=launch_setup),
     ])

@@ -43,6 +43,7 @@ struct CtrlInterfaces
 
     control_input_msgs::msg::Inputs control_inputs_;
     int frequency_{};
+    bool use_sim_kp_kd_ = false;
 
     CtrlInterfaces() = default;
 

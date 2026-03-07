@@ -93,3 +93,25 @@ void WaveGenerator::calcWave(Vec4 &phase, VecInt4 &contact, const WaveStatus sta
         }
     }
 }
+
+void WaveGenerator::setStatus(WaveStatus status) {
+    status_ = status;
+    switch_status_.setOnes();
+}
+
+void WaveGenerator::setStatusFromFSM(FSMStateName fsm_state) {
+    switch (fsm_state) {
+        case FSMStateName::FIXEDDOWN:
+        case FSMStateName::FIXEDSTAND:
+        case FSMStateName::FREESTAND:
+        case FSMStateName::BALANCETEST:
+        case FSMStateName::TROTTING:
+            setStatus(WaveStatus::STANCE_ALL);
+            break;
+
+        default:
+            // Default to SWING_ALL for safety (PASSIVE, INVALID, and unknown states)
+            setStatus(WaveStatus::SWING_ALL);
+            break;
+    }
+}

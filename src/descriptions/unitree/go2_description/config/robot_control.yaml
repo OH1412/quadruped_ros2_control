@@ -1,7 +1,7 @@
 # Controller Manager configuration
 controller_manager:
   ros__parameters:
-    update_rate: 50  # Hz
+    update_rate: 1000  # Hz
 
     # Define the available controllers
     joint_state_broadcaster:
@@ -27,9 +27,6 @@ imu_sensor_broadcaster:
 unitree_guide_controller:
   ros__parameters:
     update_rate: 200  # Hz
-    gait_period: 0.45  # 步态周期 (秒)
-    gait_duty: 0.5     # 占空比
-    gait_phases: [0.0, 0.5, 0.5, 0.0]  # 四条腿相位偏移
     down_pos:
       - -0.01
       - 1.27
@@ -89,13 +86,14 @@ unitree_guide_controller:
       - linear_acceleration.x
       - linear_acceleration.y
       - linear_acceleration.z
+    # choose simulation (mujoco) kp/kd set when true; default true
+    use_sim_kp_kd: false
 
 ocs2_quadruped_controller:
   ros__parameters:
     update_rate: 500  # Hz
     robot_pkg: "go2_description"
     feet_force_threshold: 20.0
-    align_min_foot_to_ground: true
 #    default_kd: 3.5
     joints:
       - FL_hip_joint

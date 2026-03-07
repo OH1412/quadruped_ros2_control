@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>livox_imu_converter</name>
+  <version>0.1.0</version>
+  <description>Convert Livox IMU messages by translating linear acceleration from g to m/s^2 and republishing on /imu.</description>
+  <maintainer email="rc_kfs@example.com">rc_kfs</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>sensor_msgs</depend>
+
+  <test_depend>ament_pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

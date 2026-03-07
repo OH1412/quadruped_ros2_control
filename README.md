@@ -11,25 +11,41 @@
 本仓库是一个完整的 ROS2 工作空间，主要目录结构如下（仅列出核心模块）：
 
 - src/
-  - commands/：上位机命令与键盘控制节点（如 keyboard_input）
+  - commands/：上位机命令与控制输入节点
+    - keyboard_input/：从键盘读取输入并发布控制消息
+    - joystick_input/：从有线/无线手柄读取输入并发布控制消息
+    - unitree_joystick_input/：从 Unitree 官方遥控器读取输入，桥接为 ROS2 消息
+    - control_input_msgs/：控制输入消息定义
   - controllers/：各类 ros2-control 控制器
     - unitree_guide_controller/：基于 Unitree Guide 的控制器
     - ocs2_quadruped_controller/：基于 OCS2 & legged_control 的 NMPC 控制器
     - rl_quadruped_controller/：基于强化学习的控制器
-  - descriptions/：机器人模型（URDF/SRDF），包含 Unitree / DeepRobotics / Xiaomi 等多种机型
-  - drivers/：传感器与外设驱动
-  - estimations/：状态估计相关组件
-  - hardwares/：ros2-control 硬件接口与 Gazebo / MuJoCo 插件
+    - leg_pd_controller/：关节 PD 控制器（用于 Gazebo Classic）
+  - descriptions/：机器人模型（URDF/SRDF）
+    - unitree/：Go1 / Go2 / A1 / Aliengo / B2 / mybot / Pangolin
+    - deep_robotics/：Lite3 / X30
+    - xiaomi/：Cyberdog
+    - anybotics/：Anymal C
+  - drivers/：Unitree 电机驱动与外设
+    - unitree_hw_interface/、unitree_controller/、unitree_m8010_controller/ 等
+  - estimations/：状态估计与导航子系统（SCURC 导航仿真系统）
+    - dependencies_and_tools/：FAST-LIVO2 SLAM、Livox 驱动、Elevation Mapping CuPy 等
+    - navigation_plugins/：Nav2 扩展插件（代价地图层、速度平滑器等）
+    - robot_functionality/：r2_bringup 启动配置、KFS 检测导航、行为树决策等
+  - hardwares/：ros2-control 硬件接口与仿真插件
     - gz_quadruped_hardware/：Gazebo Harmonic ros2-control 插件
     - hardware_unitree_mujoco/：Unitree MuJoCo 仿真硬件接口
-  - libraries/：仿真与工具库
+    - unitree_ros2/：Unitree ROS2 SDK 与接口
+  - libraries/：通用库与工具
+    - controller_common/：控制器公共库
     - gz_quadruped_playground/：基于 Gazebo 的环境与感知仿真
-    - grid_map_* / terrain_analysis_* 等环境感知与代价地图组件
+    - qpoases_colcon/：qpOASES 二次规划库（colcon 封装）
   - ocs2_ros2/：OCS2 相关库与 ROS2 接口
 
 - mybot/：基于 Go2 的自定义 MuJoCo 机器人模型
   - README.md：mybot 使用说明
   - QUICK_REFERENCE.md / INTERFACE_ANALYSIS.md：接口与参数详细分析
+  - UPDATES.md：更新记录
 
 - build/、install/、log/：colcon 构建输出与日志
 
@@ -50,10 +66,22 @@
   - Gazebo Harmonic (ros-gz)：新一代仿真平台，配套 gz_quadruped_hardware 插件
 
 - 多机器人模型支持
-  - Unitree：Go1 / Go2 / A1 / Aliengo / B2
+  - Unitree：Go1 / Go2 / A1 / Aliengo / B2 / mybot / Pangolin
   - Xiaomi：Cyberdog
   - DeepRobotics：Lite3 / X30
   - Anybotics：Anymal C
+
+- 多种控制输入方式
+  - 键盘控制（keyboard_input）
+  - 有线/无线手柄（joystick_input）
+  - Unitree 官方遥控器（unitree_joystick_input）
+
+- SCURC 导航仿真系统
+  - FAST-LIVO2 高精度 SLAM 定位
+  - GPU 加速高程建图（Elevation Mapping CuPy）
+  - Nav2 导航栈与扩展插件
+  - YOLOv8 目标检测与 KFS 智能决策
+  - 行为树任务执行（BT.CPP v4.0）
 
 - 真实机器人部署
   - 已支持真实 Unitree Go2 机器人（含硬件接口与部署流程）
@@ -77,6 +105,7 @@
   - Gazebo Classic / Gazebo Harmonic
   - Pinocchio（OCS2 控制器依赖，不要使用 rosdep 安装的版本）
   - libtorch（RL 控制器依赖，可选 CPU / CUDA 版本）
+  - CUDA 12.x + CuPy（导航系统高程建图依赖）
 
 各控制器与插件的额外依赖，请参考对应子目录下的 README。
 
@@ -126,14 +155,21 @@ colcon build --packages-up-to hardware_unitree_mujoco
 3. 将 mybot 所需的 `.obj` / `.stl` 模型文件放入 `mybot/assets` 中（可从 Pangolin 团队处获取）。
 4. 详细配置与参数说明参见 [mybot/README.md](mybot/README.md)、[mybot/QUICK_REFERENCE.md](mybot/QUICK_REFERENCE.md) 与 [mybot/INTERFACE_ANALYSIS.md](mybot/INTERFACE_ANALYSIS.md)。
 
-**3）启动 ros2-control 与键盘控制**
+**3）启动 ros2-control 与控制输入**
 
 ```bash
 source ~/ros2_ws/install/setup.bash
 ros2 launch unitree_guide_controller mujoco.launch.py
 
+# 使用键盘控制
 source ~/ros2_ws/install/setup.bash
 ros2 run keyboard_input keyboard_input
+
+# 或使用手柄控制
+ros2 run joystick_input joystick_input
+
+# 或使用 Unitree 遥控器
+ros2 run unitree_joystick_input unitree_joystick_input
 ```
 
 ![mujoco](.images/mujoco.png)
@@ -216,16 +252,50 @@ ros2 run keyboard_input keyboard_input
   - 使用 libtorch 运行强化学习策略，可从 MuJoCo 仿真迁移到真实机器人
   - 详细说明见 [src/controllers/rl_quadruped_controller/README.md](src/controllers/rl_quadruped_controller/README.md)
 
+- Controller Common
+  - 控制器公共组件库（FSM、步态等共用逻辑）
+  - 位于 [src/libraries/controller_common](src/libraries/controller_common)
+
 - Gazebo Quadruped Hardware & Playground
   - Gazebo Harmonic ros2-control 插件：见 [src/hardwares/gz_quadruped_hardware](src/hardwares/gz_quadruped_hardware)
   - Gazebo Playground：见 [src/libraries/gz_quadruped_playground](src/libraries/gz_quadruped_playground)
+
+- Control Command Inputs
+  - 支持键盘、手柄、Unitree 遥控器等多种输入方式
+  - 详细说明见 [src/commands/README.md](src/commands/README.md)
 
 - Robot Descriptions
   - 各机器人 URDF/SRDF：见 [src/descriptions](src/descriptions) 及其子目录 README
 
 ---
 
-## 6. 真实 Unitree Go2 机器人
+## 6. SCURC 导航仿真系统
+
+`src/estimations/` 目录下包含一个完整的 SCURC 导航仿真系统，面向 RoboCon 竞赛的自主导航与任务执行：
+
+- **FAST-LIVO2 高精度 SLAM**：激光-惯性融合定位，100Hz 高频输出
+- **GPU 加速高程建图**：CuPy + CUDA 加速，毫秒级 2.5D 地形重建
+- **Nav2 导航栈**：全局/局部规划器、多层代价地图、扩展插件
+- **YOLOv8 目标检测**：实时多目标检测与 KFS 智能决策
+- **行为树决策引擎**：BT.CPP v4.0，支持复杂比赛任务逻辑
+
+详细说明见 [src/estimations/README.md](src/estimations/README.md)
+
+---
+
+## 7. Unitree 电机驱动
+
+`src/drivers/` 目录包含 Unitree 电机相关驱动与控制节点：
+
+- unitree_hw_interface：Unitree 电机硬件接口
+- unitree_controller：Unitree 电机控制器
+- unitree_m8010_controller：Unitree M8010 电机控制器
+- unitree_command_publisher / unitree_feedback_reader：电机命令与反馈接口
+- unitree_motor_msgs：电机消息定义
+
+---
+
+## 8. 真实 Unitree Go2 机器人
 
 - 已支持真实 Go2 机器人控制：
   - 含硬件接口、控制器与部署示例
@@ -237,7 +307,7 @@ ros2 run keyboard_input keyboard_input
 
 ---
 
-## 7. Roadmap / Todo
+## 9. Roadmap / Todo
 
 - [x] **[2025-02-23]** Gazebo Playground
   - [x] OCS2 controller for Gazebo Simulation
@@ -247,7 +317,7 @@ ros2 run keyboard_input keyboard_input
 
 ---
 
-## 8. 进一步探索
+## 10. 进一步探索
 
 - 更多机器人模型
   - 见 [src/descriptions](src/descriptions)
@@ -259,12 +329,18 @@ ros2 run keyboard_input keyboard_input
 - 传感器与环境仿真
   - Gazebo Quadruped Playground：见 [src/libraries/gz_quadruped_playground](src/libraries/gz_quadruped_playground)
 
+- 控制输入
+  - 键盘、手柄、遥控器输入：见 [src/commands](src/commands)
+
+- 导航仿真系统
+  - SCURC 导航系统：见 [src/estimations](src/estimations)
+
 - 自定义机器人 mybot
   - 见 [mybot/README.md](mybot/README.md)
 
 ---
 
-## 9. 参考文献与相关项目
+## 11. 参考文献与相关项目
 
 ### Conference Paper
 

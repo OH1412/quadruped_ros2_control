@@ -10,9 +10,9 @@
 			<param name="state_imu_topic">/imu</param>
 			<param name="state_foot_force_topic">/foot_force</param>
 			<param name="state_odometry_topic">/odometry</param>
-			<param name="command_joint_topic">/joint_command</param>
-			<param name="command_kp_topic">/joint_kp</param>
-			<param name="command_kd_topic">/joint_kd</param>
+			<param name="command_joint_topic">/joint_commands</param>
+			<param name="command_kp_topic">/kp_commands</param>
+			<param name="command_kd_topic">/kd_commands</param>
 		</hardware>
 
 		<joint name="FR_hip_joint">

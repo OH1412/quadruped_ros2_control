@@ -5,8 +5,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction, IncludeLaunchDescription, RegisterEventHandler
 from launch.event_handlers import OnProcessExit
-from launch.conditions import IfCondition
-from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
+from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
@@ -14,9 +13,6 @@ from launch_ros.substitutions import FindPackageShare
 def launch_setup(context, *args, **kwargs):
     package_description = context.launch_configurations['pkg_description']
     pkg_path = os.path.join(get_package_share_directory(package_description))
-
-    package_controller = "unitree_guide_controller"
-    package_hardware = "hardware_unitree_mujoco"
 
     xacro_file = os.path.join(pkg_path, 'xacro', 'robot.xacro')
     robot_description = xacro.process_file(xacro_file).toxml()
@@ -29,21 +25,17 @@ def launch_setup(context, *args, **kwargs):
         ]
     )
 
-    rviz_config_file = os.path.join(get_package_share_directory(package_description), "config", "visualize_urdf.rviz")
+    controller_parameters = [robot_controllers]
+    if context.launch_configurations.get('use_sim_kp_kd', 'false').lower() == 'true':
+        controller_parameters.append(
+            os.path.join(
+                get_package_share_directory('unitree_guide_controller'),
+                'config',
+                'use_sim_kp_kd.yaml',
+            )
+        )
 
-    # Start DDS↔ROS bridge to convert Mujoco/real-robot DDS to ROS topics
-    unitree_bridge = Node(
-        package=package_hardware,
-        executable='unitree_dds_ros_bridge',
-        name='unitree_dds_ros_bridge',
-        parameters=[
-            {'network_interface': 'lo'},  # Use localhost for Mujoco simulation
-            {'domain': 1},
-        ],
-        output='screen',
-        # Allow disabling the bridge via launch arg
-        condition=IfCondition(LaunchConfiguration('enable_bridge')),
-    )
+    rviz_config_file = os.path.join(get_package_share_directory(package_description), "config", "visualize_urdf.rviz")
 
     rviz = Node(
         package='rviz2',
@@ -70,7 +62,7 @@ def launch_setup(context, *args, **kwargs):
     controller_manager = Node(
         package="controller_manager",
         executable="ros2_control_node",
-        parameters=[robot_controllers],
+        parameters=controller_parameters,
         remappings=[
             ("~/robot_description", "/robot_description"),
         ],
@@ -95,11 +87,9 @@ def launch_setup(context, *args, **kwargs):
         package="controller_manager",
         executable="spawner",
         arguments=["unitree_guide_controller", "--controller-manager", "/controller_manager"],
-
     )
 
     return [
-        unitree_bridge,  # Start bridge to publish DDS data as ROS topics
         rviz,
         robot_state_publisher,
         controller_manager,
@@ -126,15 +116,14 @@ def generate_launch_description():
         description='package for robot description'
     )
 
-    # Control whether to start the Unitree DDS↔ROS bridge
-    enable_bridge = DeclareLaunchArgument(
-        'enable_bridge',
+    use_sim_arg = DeclareLaunchArgument(
+        'use_sim_kp_kd',
         default_value='false',
-        description='Enable Unitree DDS↔ROS bridge (true/false)'
+        description='If true, use simulation kp/kd parameters (mujoco)'
     )
 
     return LaunchDescription([
         pkg_description,
-        enable_bridge,
+        use_sim_arg,
         OpaqueFunction(function=launch_setup),
     ])

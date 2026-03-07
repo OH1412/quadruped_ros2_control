@@ -2,6 +2,16 @@
 build/*
 install/*
 log/*
+logs/*
+joint_plots/*
+src/estimations/dependencies_and_tools/ws_livox/build/*
+src/estimations/dependencies_and_tools/ws_livox/log/*
+src/estimations/dependencies_and_tools/fast_livo2_relocation/log/*
+src/estimations/dependencies_and_tools/fast_livo2_relocation/src/FAST-LIVO2/log/*
+record_commands.sh
+README_recording.md
+controller_parameters.md
+plot_joint_curves.py
 *.log
 *.tmp
 *.bak

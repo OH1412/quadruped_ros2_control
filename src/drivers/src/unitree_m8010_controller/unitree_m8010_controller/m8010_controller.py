@@ -57,23 +57,40 @@ class M8010Controller(Node):
 
         self.gear_ratio = 6.33
         self.q_scale = 1.0 / self.gear_ratio
+        # 下发驱动的力矩应缩放至转子端 (1/6.33)，读取的反馈应缩放至关节端 (6.33)
+        self.tau_output_to_motor = 1.0 / self.gear_ratio
+        self.tau_motor_to_output = self.gear_ratio
         self.invert_ids = {2, 3, 7, 10, 11, 12}
+        # self.pose_offset_by_id = {
+        #     1: -0.35814,
+        #     2: 0.99794,
+        #     3: -2.57956,
+        #     4: 0.35814,
+        #     5: 0.99794,
+        #     6: -2.57956,
+        #     7: 0.35814,
+        #     8: 0.99794,
+        #     9: -2.57956,
+        #     10: -0.35814,
+        #     11: 0.99794,
+        #     12: -2.57956,
+        # }
         self.pose_offset_by_id = {
-            1: -0.35814,
+            1: -0.3,
             2: 0.99794,
             3: -2.57956,
-            4: 0.35814,
+            4: 0.3,
             5: 0.99794,
             6: -2.57956,
-            7: 0.35814,
+            7: 0.35,
             8: 0.99794,
             9: -2.57956,
-            10: -0.35814,
+            10: -0.35,
             11: 0.99794,
             12: -2.57956,
         }
 
-        self.declare_parameter("ports", ["/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_FT6THBYZ-if00-port0", 
+        self.declare_parameter("ports", ["/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_FT7FHAK3-if00-port0", 
                                          "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_FT6SV658-if00-port0"])
         self.declare_parameter("bus0_ids", [1, 2, 3, 4, 5, 6])
         self.declare_parameter("bus1_ids", [7, 8, 9, 10, 11, 12])
@@ -97,8 +114,8 @@ class M8010Controller(Node):
         self.declare_parameter("offset_window_sec", 1.0)
         self.declare_parameter("offset_topic", "/offset_msg")
         self.declare_parameter("enable_mask", [0] * 12)
-        self.declare_parameter("command_topic", "/unitree_command")
-        self.declare_parameter("leg_feedback_mask", [0, 0, 0, 1])
+        self.declare_parameter("command_topic", "/unitree_commands")
+        self.declare_parameter("leg_feedback_mask", [1, 1, 1, 1])
         self.declare_parameter("q_delta_topic", "/unitree_q_delta_on_activate")
 
         self.ports = list(self.get_parameter("ports").value)
@@ -254,7 +271,8 @@ class M8010Controller(Node):
                     # cmd.dq = dq_des  * direction
                     cmd.kp = kp * mask
                     cmd.kd = kd * mask
-                    cmd.tau = tau_ff * mask
+                    # 下发指令：前馈力矩乘以缩放系数（输出轴 -> 电机转子）并考虑方向
+                    cmd.tau = tau_ff * mask * direction * self.tau_output_to_motor
 
                 # 记录实际将要下发的电机侧命令（包含齿比与方向）
                 try:
@@ -267,7 +285,7 @@ class M8010Controller(Node):
                             "tau": float(cmd.tau),
                         }
                 except Exception:
-                    pass
+                      pass
 
                 try:
                     serial_port.sendRecv(cmd, data)
@@ -276,11 +294,15 @@ class M8010Controller(Node):
                         if is_valid:
                             direction = -1.0 if int(motor_id) in self.invert_ids else 1.0
                             scaled_q = float(data.q) * self.q_scale * direction
+                            # 将转子速度缩放到输出轴并考虑方向
                             scaled_dq = float(data.dq) * self.q_scale * direction
+                            # 读取反馈：转子力矩乘以减速比转换到输出轴，并考虑方向
+                            scaled_tau = float(data.tau) * self.tau_motor_to_output * direction
                             payload = {
                                 "id": int(motor_id),
                                 "theta": scaled_q,
                                 "omega": scaled_dq,
+                                "tau": scaled_tau,
                                 "temp": int(data.temp),
                                 "merror": int(data.merror),
                             }
@@ -364,6 +386,7 @@ class M8010Controller(Node):
             joint_state.name = self.joint_names
             joint_state.position = []
             joint_state.velocity = []
+            joint_state.effort = []
 
             for motor_id in range(1, 13):
                 leg_index = (motor_id - 1) // 3
@@ -373,11 +396,13 @@ class M8010Controller(Node):
                     if data is None:
                         joint_state.position.append(0.0)
                         joint_state.velocity.append(0.0)
+                        joint_state.effort.append(0.0)
                     else:
                         offset = float(self.offset_value.get(motor_id, 0.0))
                         pose_offset = float(self.pose_offset_by_id.get(motor_id, 0.0))
                         joint_state.position.append(float(data["theta"]) - offset + pose_offset)
                         joint_state.velocity.append(float(data["omega"]))
+                        joint_state.effort.append(float(data.get("tau", 0.0)))
                 else:
                     index = motor_id - 1
                     with self.cmd_lock:
@@ -391,9 +416,11 @@ class M8010Controller(Node):
                         pose_offset = float(self.pose_offset_by_id.get(motor_id, 0.0))
                         joint_state.position.append(pose_offset)
                         joint_state.velocity.append(0.0)
+                        joint_state.effort.append(0.0)
                     else:
                         joint_state.position.append(q_des)
                         joint_state.velocity.append(dq_des)
+                        joint_state.effort.append(tau)
 
             self.joint_state_pub.publish(joint_state)
 
@@ -404,25 +431,26 @@ class M8010Controller(Node):
                 if data is None:
                     lines.append(f"  id={motor_id} 未正常接收")
                 else:
+                    # 同时打印反馈的力矩(tau)，若 payload 中没有 tau 字段则显示 0.0
                     lines.append(
                         f"  id={motor_id} q={data['theta']:.4f} dq={data['omega']:.4f} "
-                        f"temp={data['temp']} merror={data['merror']}"
+                        f"tau={data.get('tau', 0.0):.4f} temp={data['temp']} merror={data['merror']}"
                     )
             with self.cmd_lock:
                 cmd_lines = ["Unitree command (q+offset/dq/kp/kd/tau):"]
-                for motor_id in range(1, 13):
-                    index = motor_id - 1
-                    offset = float(self.offset_value.get(motor_id, 0.0))
-                    pose_offset = float(self.pose_offset_by_id.get(motor_id, 0.0))
-                    q_cmd = float(self.last_cmd.q_des[index]) - pose_offset + offset
-                    dq_cmd = float(self.last_cmd.dq_des[index])
-                    kp_cmd = float(self.last_cmd.kp[index])
-                    kd_cmd = float(self.last_cmd.kd[index])
-                    tau_cmd = float(self.last_cmd.tau_ff[index])
-                    cmd_lines.append(
-                        f"  id={motor_id} q={q_cmd:.4f} dq={dq_cmd:.4f} "
-                        f"kp={kp_cmd:.4f} kd={kd_cmd:.4f} tau={tau_cmd:.4f}"
-                    )
+                # for motor_id in range(1, 13):
+                #     index = motor_id - 1
+                #     offset = float(self.offset_value.get(motor_id, 0.0))
+                #     pose_offset = float(self.pose_offset_by_id.get(motor_id, 0.0))
+                #     q_cmd = float(self.last_cmd.q_des[index]) - pose_offset + offset
+                #     dq_cmd = float(self.last_cmd.dq_des[index])
+                #     kp_cmd = float(self.last_cmd.kp[index])
+                #     kd_cmd = float(self.last_cmd.kd[index])
+                #     tau_cmd = float(self.last_cmd.tau_ff[index])
+                #     cmd_lines.append(
+                #         f"  id={motor_id} q={q_cmd:.4f} dq={dq_cmd:.4f} "
+                #         f"kp={kp_cmd:.4f} kd={kd_cmd:.4f} tau={tau_cmd:.4f}"
+                #     )
                 # 新增：打印原始接收到的 /unitree_command（不加偏移/不加姿态修正）
                 raw_cmd_lines = ["Unitree command RAW (q/dq/kp/kd/tau):"]
                 for motor_id in range(1, 13):
@@ -452,20 +480,9 @@ class M8010Controller(Node):
             except Exception:
                 pass
 
-            # 新增：打印发送q与反馈q的差值（cmd_q - fb_q）
-            delta_lines = ["Unitree q delta (cmd_q - fb_q):"]
-            try:
-                with self.sent_cmd_lock:
-                    for motor_id in range(1, 13):
-                        fb = self.latest.get(motor_id)
-                        cmd_val = self.sent_cmd_by_id.get(motor_id)
-                        if fb is None or cmd_val is None:
-                            delta_lines.append(f"  id={motor_id} 无数据")
-                        else:
-                            delta = float(cmd_val["q"]) - float(fb["theta"])
-                            delta_lines.append(f"  id={motor_id} delta={delta:.4f}")
-            except Exception:
-                pass
+            # 新增：打印发送q与反馈q的差值（cmd_q - fb_q)
+            # 目前该功能保留注释，但确保变量存在以避免未定义异常
+            delta_lines = []
 
             self.get_logger().info("\n".join(lines + cmd_lines + raw_cmd_lines + actual_cmd_lines + delta_lines))
 

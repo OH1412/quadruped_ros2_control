@@ -27,6 +27,9 @@ imu_sensor_broadcaster:
 unitree_guide_controller:
   ros__parameters:
     update_rate: 200  # Hz
+    gait_period: 0.9  # 步态周期 (秒)
+    gait_duty: 0.5     # 占空比
+    gait_phases: [0.0, 0.5, 0.5, 0.0]  # 四条腿相位偏移
     down_pos:
       - -0.01
       - 1.27
@@ -86,6 +89,7 @@ unitree_guide_controller:
       - linear_acceleration.x
       - linear_acceleration.y
       - linear_acceleration.z
+    use_sim_kp_kd: false
 
 ocs2_quadruped_controller:
   ros__parameters:

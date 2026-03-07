@@ -31,6 +31,12 @@ public:
     VecInt4 contact_;
     WaveStatus status_{};
 
+    // Set status directly
+    void setStatus(WaveStatus status);
+
+    // Set status based on FSM state
+    void setStatusFromFSM(FSMStateName fsm_state);
+
 private:
     /**
      * Update phase, contact and status based on current time.

@@ -51,8 +51,12 @@ void StateBalanceTest::run(const rclcpp::Time &/*time*/, const rclcpp::Duration 
     Rd_ = rotz(yaw) * init_rotation_;
 
     for (int i = 0; i < 12; i++) {
-        ctrl_interfaces_.joint_kp_command_interface_[i].get().set_value(0.8);
-        ctrl_interfaces_.joint_kd_command_interface_[i].get().set_value(0.8);
+        // ctrl_interfaces_.joint_kp_command_interface_[i].get().set_value(1.0);
+        // ctrl_interfaces_.joint_kd_command_interface_[i].get().set_value(0.1);
+        const double kp_val = ctrl_interfaces_.use_sim_kp_kd_ ? 0.8 : 0.8 / 40.0;
+        const double kd_val = ctrl_interfaces_.use_sim_kp_kd_ ? 0.8 : 0.8 / 40.0;
+        ctrl_interfaces_.joint_kp_command_interface_[i].get().set_value(kp_val);
+        ctrl_interfaces_.joint_kd_command_interface_[i].get().set_value(kd_val);
     }
 
     calcTorque();

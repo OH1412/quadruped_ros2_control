@@ -196,8 +196,7 @@ void Estimator::update() {
             ctrl_interfaces_.imu_state_interface_[8].get().get_value(),
             ctrl_interfaces_.imu_state_interface_[9].get().get_value();
 
-    // u_ = rotation_ * acceleration_ + g_;
-    u_ = rotation_.transpose() * acceleration_ + g_;
+    u_ = rotation_ * acceleration_ + g_;
     x_hat_ = A * x_hat_ + B * u_;
     y_hat_ = C * x_hat_;
 

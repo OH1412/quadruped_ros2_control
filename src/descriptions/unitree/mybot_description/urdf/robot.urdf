@@ -196,8 +196,10 @@
   <link name="trunk">
     <inertial>
       <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
-      <mass value="5.3036"/>
-      <inertia ixx="0.012634" ixy="-1.0247E-06" ixz="0.002562" iyy="0.017259" iyz="-3.3196E-07" izz="0.017164"/>
+      <!-- <mass value="5.3036"/>
+      <inertia ixx="0.012634" ixy="-1.0247E-06" ixz="0.002562" iyy="0.017259" iyz="-3.3196E-07" izz="0.017164"/> -->
+      <mass value="4.30616163" />
+      <inertia ixx="0.02941338" ixy="0.00014956" ixz="-0.00122888" iyy="0.0721581" iyz="1.86E-06" izz="0.08079063" />
       <!-- go2 对应参数: trunk_mass=6.921, trunk_com=(0.021112, 0, -0.005366),
                      inertia: ixx=0.02448, ixy=0.00012166, ixz=0.0014849, iyy=0.098077, iyz=-3.12e-05, izz=0.107 -->
     </inertial>
