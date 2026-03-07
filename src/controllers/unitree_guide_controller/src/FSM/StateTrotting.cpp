@@ -217,11 +217,11 @@ bool StateTrotting::checkStepOrNot() {
     // This prevents switching to a trotting gait based on velocity.
     // The original logic below was used to trigger stepping when movement commands
     // or position/velocity errors exceeded thresholds.
-    // if (fabs(v_cmd_body_(0)) > 0.03 || fabs(v_cmd_body_(1)) > 0.03 ||
-    //     fabs(pos_error_(0)) > 0.08 || fabs(pos_error_(1)) > 0.08 ||
-    //     fabs(vel_error_(0)) > 0.05 || fabs(vel_error_(1)) > 0.05 ||
-    //     fabs(d_yaw_cmd_) > 0.20) {
-    //     return true;
-    // }
+    if (fabs(v_cmd_body_(0)) > 0.03 || fabs(v_cmd_body_(1)) > 0.03 ||
+        fabs(pos_error_(0)) > 0.08 || fabs(pos_error_(1)) > 0.08 ||
+        fabs(vel_error_(0)) > 0.05 || fabs(vel_error_(1)) > 0.05 ||
+        fabs(d_yaw_cmd_) > 0.20) {
+        return true;
+    }
     return false;
 }
