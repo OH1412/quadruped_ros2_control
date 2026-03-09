@@ -17,6 +17,8 @@ set(CONTROLLER_INCLUDE_DEPENDS
         control_input_msgs
         controller_common
         kdl_parser
+        visualization_msgs
+        geometry_msgs
 )
 
 # find dependencies
@@ -48,6 +50,7 @@ add_library(${PROJECT_NAME} SHARED
         src/gait/WaveGenerator.cpp
         src/gait/FeetEndCalc.cpp
         src/gait/GaitGenerator.cpp
+        src/visualize/FootTrajectoryVisualization.cpp
 
 )
 target_include_directories(${PROJECT_NAME}

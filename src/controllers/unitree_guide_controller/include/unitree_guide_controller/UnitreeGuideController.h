@@ -20,6 +20,8 @@
 #include "FSM/StateSwingTest.h"
 #include "FSM/StateTrotting.h"
 
+#include "visualize/FootTrajectoryVisualization.h"  // trajectory helper
+
 namespace unitree_guide_controller {
     struct FSMStateList {
         std::shared_ptr<FSMState> invalid;
@@ -119,6 +121,9 @@ namespace unitree_guide_controller {
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr body_yaw_cmd_pub_;
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr foot_pos_pub_;
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr foot_pos_cmd_pub_;
+
+        // visualizer for foot trajectories
+        std::unique_ptr<visualize::FootTrajectoryVisualization> foot_vis_;
 
         std::unordered_map<
             std::string, std::vector<std::reference_wrapper<hardware_interface::LoanedCommandInterface> > *>

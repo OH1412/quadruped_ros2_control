@@ -6,6 +6,8 @@
 #define STATETROTTING_H
 #include <unitree_guide_controller/control/BalanceCtrl.h>
 #include <unitree_guide_controller/gait/GaitGenerator.h>
+#include <unitree_guide_controller/gait/WaveGenerator.h> // for contact vector type
+#include <unitree_guide_controller/control/Estimator.h> // required for inline getter
 #include "controller_common/FSM/FSMState.h"
 
 class StateTrotting final : public FSMState {
@@ -80,6 +82,10 @@ public:
     double getYawCmd() const { return yaw_cmd_; }
     Vec34 getPosFeetGlobalGoal() const { return pos_feet_global_goal_; }
     Vec34 getForceFeetGlobal() const { return force_feet_global_; }
+    // current foot positions (global frame), used for visualization
+    Vec34 getFeetPositionGlobal() const { return estimator_->getFeetPos(); }
+    // contact status from wave generator (0 swing, 1 contact)
+    VecInt4 getContact() const { return wave_generator_->contact_; }
 
     // Control Parameters
     double gait_height_;

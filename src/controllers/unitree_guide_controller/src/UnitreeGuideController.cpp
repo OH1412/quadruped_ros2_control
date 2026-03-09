@@ -8,6 +8,7 @@
 
 #include <unitree_guide_controller/gait/WaveGenerator.h>
 #include "unitree_guide_controller/robot/QuadrupedRobot.h"
+#include "unitree_guide_controller/visualize/FootTrajectoryVisualization.h"
 
 namespace unitree_guide_controller
 {
@@ -182,6 +183,15 @@ namespace unitree_guide_controller
                 }
             }
             foot_force_pub_->publish(ff_msg);
+
+            // update foot trajectory visualization (only during trotting state)
+            if (foot_vis_) {
+                if (auto trotting = std::dynamic_pointer_cast<StateTrotting>(current_state_)) {
+                    Vec34 cur_feet = trotting->getFeetPositionGlobal();
+                    VecInt4 contacts = trotting->getContact();
+                    foot_vis_->update(cur_feet, contacts);
+                }
+            }
         }
 
         return controller_interface::return_type::OK;
@@ -276,6 +286,9 @@ namespace unitree_guide_controller
             "/guide/foot_pos", 10);
         foot_pos_cmd_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
             "/guide/foot_pos_cmd", 10);
+
+        // visualization helper (uses its own publisher internally)
+        foot_vis_ = std::make_unique<visualize::FootTrajectoryVisualization>(get_node());
 
         ctrl_component_.wave_generator_ = std::make_shared<WaveGenerator>(0.45, 0.5, Vec4(0, 0.5, 0.5, 0));
 
