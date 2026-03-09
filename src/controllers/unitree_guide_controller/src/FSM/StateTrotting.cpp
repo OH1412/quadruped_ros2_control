@@ -134,22 +134,22 @@ void StateTrotting::calcTau() {
     d_wbd(2) = saturation(d_wbd(2), Vec2(-10, 10));
 
     const Vec34 pos_feet_body_global = estimator_->getFeetPos2Body();
-    Vec34 force_feet_global =
+    // compute foot forces and store in member variable
+    force_feet_global_ =
             -balance_ctrl_->calF(dd_pcd, d_wbd, B2G_RotMat, pos_feet_body_global, wave_generator_->contact_);
-
 
     Vec34 pos_feet_global = estimator_->getFeetPos();
     Vec34 vel_feet_global = estimator_->getFeetVel();
 
     for (int i(0); i < 4; ++i) {
         if (wave_generator_->contact_(i) == 0) {
-            force_feet_global.col(i) =
+            force_feet_global_.col(i) =
                     Kp_swing_ * (pos_feet_global_goal_.col(i) - pos_feet_global.col(i)) +
                     Kd_swing_ * (vel_feet_global_goal_.col(i) - vel_feet_global.col(i));
         }
     }
 
-    Vec34 force_feet_body_ = G2B_RotMat * force_feet_global;
+    Vec34 force_feet_body_ = G2B_RotMat * force_feet_global_;
 
     std::vector<KDL::JntArray> current_joints = robot_model_->current_joint_pos_;
     for (int i = 0; i < 4; i++) {

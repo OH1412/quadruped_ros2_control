@@ -38,6 +38,8 @@ private:
 
     KDL::Vector Kp, Kd;
 
+    int test_leg_;  // index [0..3] of leg to swing
+
     std::vector<KDL::JntArray> init_joint_pos_;
     std::vector<KDL::JntArray> target_joint_pos_;
 

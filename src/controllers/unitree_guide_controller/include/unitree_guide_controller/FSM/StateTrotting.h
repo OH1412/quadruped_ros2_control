@@ -68,6 +68,19 @@ private:
     Vec34 pos_feet_global_goal_, vel_feet_global_goal_;
     RotMat Rd;
 
+    // latest computed forces in global frame (4 legs ×3 axes)
+    Vec34 force_feet_global_;
+
+public:
+    // getters for monitoring/publishing
+    Vec3 getPosBody() const { return pos_body_; }
+    Vec3 getVelBody() const { return vel_body_; }
+    Vec3 getPcd() const { return pcd_; }
+    Vec3 getVelTarget() const { return vel_target_; }
+    double getYawCmd() const { return yaw_cmd_; }
+    Vec34 getPosFeetGlobalGoal() const { return pos_feet_global_goal_; }
+    Vec34 getForceFeetGlobal() const { return force_feet_global_; }
+
     // Control Parameters
     double gait_height_;
     Vec3 pos_error_, vel_error_;

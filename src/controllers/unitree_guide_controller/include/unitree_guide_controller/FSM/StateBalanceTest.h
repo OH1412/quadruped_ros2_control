@@ -42,6 +42,10 @@ private:
     RotMat Rd_;
     RotMat init_rotation_;
 
+public:
+    // expose desired body position for monitoring
+    Vec3 getPcd() const { return pcd_; }
+
     double kp_w_;
     Mat3 Kp_p_, Kd_p_, Kd_w_;
     Vec3 dd_pcd_, d_wbd_;

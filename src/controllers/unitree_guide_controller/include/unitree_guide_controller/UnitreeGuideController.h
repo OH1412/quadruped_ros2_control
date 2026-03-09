@@ -7,6 +7,7 @@
 
 #include <controller_interface/controller_interface.hpp>
 #include <std_msgs/msg/string.hpp>
+#include <std_msgs/msg/float32_multi_array.hpp>
 #include <controller_common/FSM/FSMState.h>
 #include <controller_common/FSM/StatePassive.h>
 #include <controller_common/FSM/StateFixedDown.h>
@@ -106,6 +107,18 @@ namespace unitree_guide_controller {
 
         rclcpp::Subscription<control_input_msgs::msg::Inputs>::SharedPtr control_input_subscription_;
         rclcpp::Subscription<std_msgs::msg::String>::SharedPtr robot_description_subscription_;
+
+        // publishers for intermediate variables
+        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr foot_force_pub_;
+        // split body state into separate topics for clarity
+        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr body_pos_pub_;
+        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr body_vel_pub_;
+        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr body_yaw_pub_;
+        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr body_pos_cmd_pub_;
+        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr body_vel_cmd_pub_;
+        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr body_yaw_cmd_pub_;
+        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr foot_pos_pub_;
+        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr foot_pos_cmd_pub_;
 
         std::unordered_map<
             std::string, std::vector<std::reference_wrapper<hardware_interface::LoanedCommandInterface> > *>

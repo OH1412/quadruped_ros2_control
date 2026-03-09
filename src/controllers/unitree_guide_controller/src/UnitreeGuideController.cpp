@@ -3,6 +3,8 @@
 //
 
 #include "unitree_guide_controller/UnitreeGuideController.h"
+#include <memory>
+#include <std_msgs/msg/float32_multi_array.hpp>
 
 #include <unitree_guide_controller/gait/WaveGenerator.h>
 #include "unitree_guide_controller/robot/QuadrupedRobot.h"
@@ -98,6 +100,90 @@ namespace unitree_guide_controller
             mode_ = FSMMode::NORMAL;
         }
 
+        // publish monitoring topics every cycle
+        {
+            // current body: split into pos, vel, yaw
+            Vec3 cur_pos = ctrl_component_.estimator_->getPosition();
+            Vec3 cur_vel = ctrl_component_.estimator_->getVelocity();
+            double cur_yaw = ctrl_component_.estimator_->getYaw();
+
+            std_msgs::msg::Float32MultiArray pos_msg;
+            pos_msg.data.resize(3);
+            for (int i = 0; i < 3; ++i) pos_msg.data[i] = cur_pos(i);
+            body_pos_pub_->publish(pos_msg);
+
+            std_msgs::msg::Float32MultiArray vel_msg;
+            vel_msg.data.resize(3);
+            for (int i = 0; i < 3; ++i) vel_msg.data[i] = cur_vel(i);
+            body_vel_pub_->publish(vel_msg);
+
+            std_msgs::msg::Float32MultiArray yaw_msg;
+            yaw_msg.data.resize(1);
+            yaw_msg.data[0] = cur_yaw;
+            body_yaw_pub_->publish(yaw_msg);
+
+            // desired body
+            Vec3 des_pos(0, 0, 0), des_vel(0, 0, 0);
+            double des_yaw = 0.0;
+            Vec34 des_feet_pos; des_feet_pos.setZero();
+            Vec34 foot_forces; foot_forces.setZero();
+            if (auto trotting = std::dynamic_pointer_cast<StateTrotting>(current_state_)) {
+                des_pos = trotting->getPcd();
+                des_vel = trotting->getVelTarget();
+                des_yaw = trotting->getYawCmd();
+                des_feet_pos = trotting->getPosFeetGlobalGoal();
+                foot_forces = trotting->getForceFeetGlobal();
+            } else if (auto balance = std::dynamic_pointer_cast<StateBalanceTest>(current_state_)) {
+                des_pos = balance->getPcd();
+            }
+
+            std_msgs::msg::Float32MultiArray pos_cmd_msg;
+            pos_cmd_msg.data.resize(3);
+            for (int i = 0; i < 3; ++i) pos_cmd_msg.data[i] = des_pos(i);
+            body_pos_cmd_pub_->publish(pos_cmd_msg);
+
+            std_msgs::msg::Float32MultiArray vel_cmd_msg;
+            vel_cmd_msg.data.resize(3);
+            for (int i = 0; i < 3; ++i) vel_cmd_msg.data[i] = des_vel(i);
+            body_vel_cmd_pub_->publish(vel_cmd_msg);
+
+            std_msgs::msg::Float32MultiArray yaw_cmd_msg;
+            yaw_cmd_msg.data.resize(1);
+            yaw_cmd_msg.data[0] = des_yaw;
+            body_yaw_cmd_pub_->publish(yaw_cmd_msg);
+
+            // current foot positions
+            Vec34 cur_feet = ctrl_component_.estimator_->getFeetPos();
+            std_msgs::msg::Float32MultiArray fp_msg;
+            fp_msg.data.resize(12);
+            for (int leg = 0; leg < 4; ++leg) {
+                for (int axis = 0; axis < 3; ++axis) {
+                    fp_msg.data[leg * 3 + axis] = cur_feet(axis, leg);
+                }
+            }
+            foot_pos_pub_->publish(fp_msg);
+
+            // desired foot positions
+            std_msgs::msg::Float32MultiArray fpcmd_msg;
+            fpcmd_msg.data.resize(12);
+            for (int leg = 0; leg < 4; ++leg) {
+                for (int axis = 0; axis < 3; ++axis) {
+                    fpcmd_msg.data[leg * 3 + axis] = des_feet_pos(axis, leg);
+                }
+            }
+            foot_pos_cmd_pub_->publish(fpcmd_msg);
+
+            // foot forces
+            std_msgs::msg::Float32MultiArray ff_msg;
+            ff_msg.data.resize(12);
+            for (int leg = 0; leg < 4; ++leg) {
+                for (int axis = 0; axis < 3; ++axis) {
+                    ff_msg.data[leg * 3 + axis] = foot_forces(axis, leg);
+                }
+            }
+            foot_force_pub_->publish(ff_msg);
+        }
+
         return controller_interface::return_type::OK;
     }
 
@@ -170,6 +256,26 @@ namespace unitree_guide_controller
                     ctrl_interfaces_, msg->data, feet_names_, base_name_);
                 ctrl_component_.balance_ctrl_ = std::make_shared<BalanceCtrl>(ctrl_component_.robot_model_);
             });
+
+        // intermediate-variable publishers
+        foot_force_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
+            "/guide/foot_force", 10);
+        body_pos_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
+            "/guide/body_pos", 10);
+        body_vel_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
+            "/guide/body_vel", 10);
+        body_yaw_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
+            "/guide/body_yaw", 10);
+        body_pos_cmd_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
+            "/guide/body_pos_cmd", 10);
+        body_vel_cmd_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
+            "/guide/body_vel_cmd", 10);
+        body_yaw_cmd_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
+            "/guide/body_yaw_cmd", 10);
+        foot_pos_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
+            "/guide/foot_pos", 10);
+        foot_pos_cmd_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
+            "/guide/foot_pos_cmd", 10);
 
         ctrl_component_.wave_generator_ = std::make_shared<WaveGenerator>(0.45, 0.5, Vec4(0, 0.5, 0.5, 0));
 
