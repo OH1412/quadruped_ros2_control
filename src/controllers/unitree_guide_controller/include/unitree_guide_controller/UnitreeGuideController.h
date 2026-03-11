@@ -102,6 +102,11 @@ namespace unitree_guide_controller {
             0.358, 0.997, -2.579
         };
 
+        // gait / wave parameters (period, duty ratio, phase bias for 4 legs)
+        double gait_period_ = 0.45;          // default period (s)
+        double gait_duty_ = 0.5;             // default stance ratio
+        Vec4 gait_bias_ = Vec4(0, 0.5, 0.5, 0);  // FR, FL, RR, RL phase offsets
+
         double stand_kp_ = 80.0 / 40.0;
         double stand_kd_ = 3.5 / 40.0;
         // double stand_kp_ = 1.5;

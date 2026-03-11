@@ -220,6 +220,20 @@ namespace unitree_guide_controller
             stand_pos_ = auto_declare<std::vector<double>>("stand_pos", stand_pos_);
             stand_kp_ = auto_declare<double>("stand_kp", stand_kp_);
             stand_kd_ = auto_declare<double>("stand_kd", stand_kd_);
+            // gait / wave parameters
+            gait_period_ = auto_declare<double>("gait_period", gait_period_);
+            gait_duty_ = auto_declare<double>("gait_duty", gait_duty_);
+            auto gait_phases = auto_declare<std::vector<double>>("gait_phases",
+                                                                    std::vector<double>{gait_bias_(0), gait_bias_(1), gait_bias_(2), gait_bias_(3)});
+            if (gait_phases.size() == 4) {
+                gait_bias_(0) = gait_phases[0];
+                gait_bias_(1) = gait_phases[1];
+                gait_bias_(2) = gait_phases[2];
+                gait_bias_(3) = gait_phases[3];
+            } else {
+                RCLCPP_WARN(get_node()->get_logger(),
+                            "gait_phases parameter should have size 4, using defaults instead");
+            }
             // choose sim or real kp/kd set
             const bool use_sim = auto_declare<bool>("use_sim_kp_kd", false);
             ctrl_interfaces_.use_sim_kp_kd_ = use_sim;
@@ -290,7 +304,8 @@ namespace unitree_guide_controller
         // visualization helper (uses its own publisher internally)
         foot_vis_ = std::make_unique<visualize::FootTrajectoryVisualization>(get_node());
 
-        ctrl_component_.wave_generator_ = std::make_shared<WaveGenerator>(0.45, 0.5, Vec4(0, 0.5, 0.5, 0));
+            // construct wave generator using configured gait parameters
+        ctrl_component_.wave_generator_ = std::make_shared<WaveGenerator>(gait_period_, gait_duty_, gait_bias_);
 
         return CallbackReturn::SUCCESS;
     }

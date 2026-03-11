@@ -14,7 +14,8 @@ BalanceCtrl::BalanceCtrl(const std::shared_ptr<QuadrupedRobot> &robot) {
 
     alpha_ = 0.001;
     beta_ = 0.1;
-    g_ << 0, 0, -9.81;
+    // g_ << 0, 0, -9.81;
+    g_ << 0, 0, -12.0;
     friction_ratio_ = 0.4;
     friction_mat_ << 1, 0, friction_ratio_, -1, 0, friction_ratio_, 0, 1, friction_ratio_, 0, -1,
             friction_ratio_, 0, 0, 1;

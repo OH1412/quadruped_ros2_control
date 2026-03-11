@@ -28,7 +28,7 @@ StateBalanceTest::StateBalanceTest(CtrlInterfaces &ctrl_interfaces,
     _yawMax = 20 * M_PI / 180;
     _yawMin = -_yawMax;
 
-    Kp_p_ = Vec3(150, 150, 150).asDiagonal();
+    Kp_p_ = Vec3(15, 15, 15).asDiagonal();
     Kd_p_ = Vec3(25, 25, 25).asDiagonal();
 
     kp_w_ = 200;
