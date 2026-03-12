@@ -1,11 +1,9 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="mybot_body">
 
-    <!-- 引入 transmission 宏 -->
     <xacro:include filename="$(find mybot_description)/xacro/my_common/transmission.xacro"/>
 
     <xacro:macro name="mybot_body" params="mesh_path">
-        <!-- 根链接：给插件使用的 base -->
         <link name="base"/>
         <joint name="base_to_body" type="fixed">
             <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -14,20 +12,16 @@
         </joint>
         <link name="trunk">
             <inertial>
-                  <origin
-        xyz="0.0 0.0 0.0"
-        rpy="0 0 0" />
-                <mass value="5.3036" />
-               <inertia
-                    ixx="0.012634"
-                    ixy="-1.0247E-06"
-                    ixz="0.002562"
-                    iyy="0.017259"
-                    iyz="-3.3196E-07"
-                    izz="0.017164" />
-                <!-- go2 对应参数: trunk_mass=6.921, trunk_com=(0.021112, 0, -0.005366),
-                     inertia: ixx=0.02448, ixy=0.00012166, ixz=0.0014849, iyy=0.098077, iyz=-3.12e-05, izz=0.107 -->
-            </inertial>
+                <origin xyz="-0.055 0.0 -0.075" rpy="0 0 0" />
+                <mass value="4.30616163" />
+                <inertia
+                    ixx="0.02941338"
+                    ixy="0.00014956"
+                    ixz="-0.00122888"
+                    iyy="0.0721581"
+                    iyz="1.86E-06"
+                    izz="0.08079063" />
+                </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
@@ -38,22 +32,19 @@
                 </material>
             </visual>
             <collision>
-                <!-- go2: trunk collision box size="0.3762 0.0935 0.114" -->
-                <origin xyz="0 0 0" rpy="0 0 0" />
+                <origin xyz="-0.055 0.0 -0.075" rpy="0 0 0" />
                 <geometry>
-                    <box size="0.3762 0.0935 0.114" />
+                    <box size="0.3 0.2535 0.193" />
                 </geometry>
             </collision>
         </link>
 
         <link name="FL_hip">
             <inertial>
-                <origin xyz="0.049109 0.0014996 -1.9828E-05" rpy="0 0 0" />
+                <origin xyz="0.06163684 0.00289794 -3.526E-05" rpy="0 0 0" />
                 <mass value="0.62455" />
-                <inertia ixx="0.00051175" ixy="3.0689E-08" ixz="3.6249E-07" iyy="0.00080416" iyz="2.5347E-08" izz="0.00043104" />
-                <!-- go2 对应参数: hip_mass=0.678, hip_com=(-0.0054, 0.00194, -0.000105),
-                     inertia: ixx=0.00048, ixy=-3.01e-06, ixz=1.11e-06, iyy=0.000884, iyz=-1.42e-06, izz=0.000596 -->
-            </inertial>
+                <inertia ixx="0.00087506" ixy="-6.484E-05" ixz="1.72E-06" iyy="0.00215427" iyz="-2.9E-07" izz="0.0017635" />
+                </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
@@ -64,10 +55,9 @@
                 </material>
             </visual>
             <collision>
-                <!-- go2: hip collision cylinder radius=0.046 length=0.04 at y=+0.0955, rpy=pi/2 0 0 -->
-                <origin xyz="0 0.0955 0" rpy="1.5708 0 0" />
+                <origin xyz="0.085 0.0 0" rpy="1.5708 0 0" />
                 <geometry>
-                    <cylinder radius="0.046" length="0.04" />
+                    <cylinder radius="0.050" length="0.05" />
                 </geometry>
             </collision>
         </link>
@@ -82,12 +72,10 @@
 
         <link name="FL_thigh">
             <inertial>
-                <origin xyz="0.00040284 0.05094 -0.044849" rpy="0 0 0" />
+                <origin xyz="0.0003318 0.04672353 -0.03438389" rpy="0 0 0" />
                 <mass value="1.107" />
-                <inertia ixx="0.0026249" ixy="-3.0685E-08" ixz="-3.4311E-05" iyy="0.0030336" iyz="-2.5044E-08" izz="0.00046586" />
-                <!-- go2 对应参数: thigh_mass=1.152, thigh_com=(-0.00374, -0.0223, -0.0327),
-                     inertia: ixx=0.00584, ixy=8.72e-05, ixz=-0.000289, iyy=0.0058, iyz=0.000808, izz=0.00103 -->
-            </inertial>
+                <inertia ixx="0.00710563" ixy="-8.76E-06" ixz="-0.00010795" iyy="0.00680795" iyz="0.00118144" izz="0.00192834" />
+                </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
@@ -98,10 +86,9 @@
                 </material>
             </visual>
             <collision>
-                <!-- go2: thigh collision box size="0.213 0.0245 0.034" at z=-0.1065, rpy=0 pi/2 0 -->
-                <origin xyz="0 0 -0.1065" rpy="0 1.5708 0" />
+                <origin xyz="0 0.071 -0.0965" rpy="0 1.5708 0" />
                 <geometry>
-                    <box size="0.213 0.0245 0.034" />
+                    <box size="0.283 0.0645 0.074" />
                 </geometry>
             </collision>
         </link>
@@ -116,12 +103,10 @@
 
         <link name="FL_calf">
             <inertial>
-                <origin xyz="0.0173313220834074 -3.86262616810795E-05 -0.100135269530258" rpy="0 0 0" />
+                <origin xyz="0.017331 -3.8626E-05 -0.10014" rpy="0 0 0" />
                 <mass value="0.292483071997453" />
-                <inertia ixx="0.000903299669438753" ixy="-2.55525312562112E-11" ixz="0.000155678759259663" iyy="0.000949320326267258" iyz="1.05414825036111E-10" izz="6.30610325260309E-05" />
-                <!-- go2 对应参数: calf_mass=0.154, calf_com=(0.00548, -0.000975, -0.115),
-                     inertia: ixx=0.00108, ixy=3.4e-07, ixz=1.72e-05, iyy=0.0011, iyz=8.28e-06, izz=3.29e-05 -->
-            </inertial>
+                <inertia ixx="0.0015248" ixy="5E-08" ixz="0.00018011" iyy="0.00154677" iyz="-1.19E-06" izz="8.932E-05" />
+                </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
@@ -132,10 +117,9 @@
                 </material>
             </visual>
             <collision>
-                <!-- go2: calf collision box size="0.213 0.016 0.016" at z=-0.1065, rpy=0 pi/2 0 -->
-                <origin xyz="0 0 -0.1065" rpy="0 1.5708 0" />
+                <origin xyz="0.015 0 -0.1065" rpy="0 1.5708 0" />
                 <geometry>
-                    <box size="0.213 0.016 0.016" />
+                    <box size="0.213 0.036 0.056" />
                 </geometry>
             </collision>
         </link>
@@ -152,9 +136,8 @@
             <inertial>
                 <origin xyz="1.66533453693773E-16 1.04083408558608E-16 -1.11022302462516E-16" rpy="0 0 0" />
                 <mass value="0.0335103216382911" />
-                <inertia ixx="5.36165146212658E-06" ixy="-7.94093388050967E-23" ixz="-3.17637355220363E-22" iyy="5.36165146212658E-06" iyz="1.32348898008481E-22" izz="5.36165146212658E-06" />
-                <!-- go2 对应参数: foot_mass=0.06, inertia approx ixx=iyy=izz=9.6e-06 -->
-            </inertial>
+                <inertia ixx="6.6833E-06" ixy="0" ixz="0" iyy="6.6833E-06" iyz="0" izz="6.6833E-06" />
+                </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
@@ -165,7 +148,6 @@
                 </material>
             </visual>
             <collision>
-                <!-- go2: foot collision sphere radius=0.02 -->
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
                     <sphere radius="0.02" />
@@ -181,11 +163,10 @@
 
         <link name="FR_hip">
             <inertial>
-                <origin xyz="0.049109 -0.0014996 -1.9828E-05" rpy="0 0 0" />
+                <origin xyz="0.06223737 -0.00344945 -3.465E-05" rpy="0 0 0" />
                 <mass value="0.62455" />
-                <inertia ixx="0.00051175" ixy="3.0689E-08" ixz="3.6249E-07" iyy="0.00080416" iyz="2.5347E-08" izz="0.00043104" />
-                <!-- go2 对应参数同左前髋(镜像): hip_mass=0.678, etc. -->
-            </inertial>
+                <inertia ixx="0.00089339" ixy="7.603E-05" ixz="-1.6E-07" iyy="0.00217895" iyz="3.1E-07" izz="0.00179768" />
+                </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
@@ -196,10 +177,9 @@
                 </material>
             </visual>
             <collision>
-                <!-- go2: hip collision cylinder at y=-0.0955, rpy=pi/2 0 0 -->
-                <origin xyz="0 -0.0955 0" rpy="1.5708 0 0" />
+                <origin xyz="0.085 0.0 0" rpy="1.5708 0 0" />
                 <geometry>
-                    <cylinder radius="0.046" length="0.04" />
+                    <cylinder radius="0.050" length="0.05" />
                 </geometry>
             </collision>
         </link>
@@ -214,9 +194,9 @@
 
         <link name="FR_thigh">
             <inertial>
-                <origin xyz="0.00040284 -0.05094 -0.044849" rpy="0 0 0" />
+                <origin xyz="0.00025996 -0.04672352 -0.03438368" rpy="0 0 0" />
                 <mass value="1.107" />
-                <inertia ixx="0.0026249" ixy="-3.0685E-08" ixz="-3.4311E-05" iyy="0.0030336" iyz="-2.5044E-08" izz="0.00046586" />
+                <inertia ixx="0.00710563" ixy="1.161E-05" ixz="-0.00010625" iyy="0.00680801" iyz="-0.00118144" izz="0.00192841" />
             </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
@@ -228,9 +208,9 @@
                 </material>
             </visual>
             <collision>
-                <origin xyz="0 0 -0.1065" rpy="0 1.5708 0" />
+                <origin xyz="0 -0.071 -0.0965" rpy="0 1.5708 0" />
                 <geometry>
-                    <box size="0.213 0.0245 0.034" />
+                    <box size="0.283 0.0645 0.074" />
                 </geometry>
             </collision>
         </link>
@@ -245,9 +225,9 @@
 
         <link name="FR_calf">
             <inertial>
-                <origin xyz="0.0173100986135107 3.8634407188376E-05 -0.10013936313376" rpy="0 0 0" />
+                <origin xyz="0.01731 3.8634E-05 -0.10014" rpy="0 0 0" />
                 <mass value="0.292483071997452" />
-                <inertia ixx="0.000903102820321633" ixy="-2.56031425051499E-11" ixz="0.000156170060518886" iyy="0.000949320326267247" iyz="1.05394578891312E-10" izz="6.32578816431396E-05" />
+                <inertia ixx="0.00152456" ixy="-5E-08" ixz="0.00018073" iyy="0.00154675" iyz="1.19E-06" izz="8.954E-05" />
             </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
@@ -259,9 +239,9 @@
                 </material>
             </visual>
             <collision>
-                <origin xyz="0 0 -0.1065" rpy="0 1.5708 0" />
+                <origin xyz="0.015 0 -0.1065" rpy="0 1.5708 0" />
                 <geometry>
-                    <box size="0.213 0.016 0.016" />
+                    <box size="0.213 0.036 0.056" />
                 </geometry>
             </collision>
         </link>
@@ -278,9 +258,8 @@
             <inertial>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <mass value="0.0335103216382911" />
-                <inertia ixx="5.36165146212658E-06" ixy="-2.68773268713706E-23" ixz="-2.7811675003655E-22" iyy="5.36165146212658E-06" iyz="2.423491454722E-23" izz="5.36165146212658E-06" />
-                <!-- go2 对应参数: foot_mass=0.06, inertia approx ixx=iyy=izz=9.6e-06 -->
-            </inertial>
+                <inertia ixx="6.6833E-06" ixy="0" ixz="0" iyy="6.6833E-06" iyz="0" izz="6.6833E-06" />
+                </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
@@ -306,11 +285,10 @@
 
         <link name="RL_hip">
             <inertial>
-                <origin xyz="-0.049109 0.0014996 1.9828E-05" rpy="0 0 0" />
+                <origin xyz="-0.063088 0.002962 3.634E-05" rpy="0 0 0" />
                 <mass value="0.62455" />
-                <inertia ixx="0.00051175" ixy="3.0689E-08" ixz="3.6249E-07" iyy="0.00080416" iyz="2.5347E-08" izz="0.00043104" />
-                <!-- go2 对应参数(后腿镜像): hip_mass=0.678, etc. -->
-            </inertial>
+                <inertia ixx="0.00086605" ixy="6.08E-05" ixz="1.68E-06" iyy="0.0020582" iyz="2.9E-07" izz="0.0016673" />
+                </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
@@ -321,15 +299,14 @@
                 </material>
             </visual>
             <collision>
-                <!-- go2: rear-left hip collision cylinder at y=+0.0955 -->
-                <origin xyz="0 0.0955 0" rpy="1.5708 0 0" />
+                <origin xyz="-0.085 0.0 0" rpy="1.5708 0 0" />
                 <geometry>
-                    <cylinder radius="0.046" length="0.04" />
+                    <cylinder radius="0.050" length="0.05" />
                 </geometry>
             </collision>
         </link>
         <joint name="RL_hip_joint" type="revolute">
-            <origin xyz="-0.0946 0.062 -0.071" rpy="0 0 0" />
+            <origin xyz="-0.2146 0.062 -0.071" rpy="0 0 0" />
             <parent link="trunk" />
             <child link="RL_hip" />
             <axis xyz="1 0 0" />
@@ -339,9 +316,9 @@
 
         <link name="RL_thigh">
             <inertial>
-                <origin xyz="0.00040284 0.05094 -0.044849" rpy="0 0 0" />
+                <origin xyz="5.896E-05 0.04672353 -0.03438485" rpy="0 0 0" />
                 <mass value="1.107" />
-                <inertia ixx="0.0026249" ixy="-3.0685E-08" ixz="-3.4311E-05" iyy="0.0030336" iyz="-2.5044E-08" izz="0.00046586" />
+                <inertia ixx="0.00710643" ixy="6.6E-07" ixz="-0.00011035" iyy="0.00681139" iyz="0.00118148" izz="0.00193099" />
             </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
@@ -353,9 +330,9 @@
                 </material>
             </visual>
             <collision>
-                <origin xyz="0 0 -0.1065" rpy="0 1.5708 0" />
+                <origin xyz="0 0.071 -0.0965" rpy="0 1.5708 0" />
                 <geometry>
-                    <box size="0.213 0.0245 0.034" />
+                    <box size="0.283 0.0645 0.074" />
                 </geometry>
             </collision>
         </link>
@@ -370,9 +347,9 @@
 
         <link name="RL_calf">
             <inertial>
-                <origin xyz="0.0173313220834085 -3.8626261668756E-05 -0.100135269530252" rpy="0 0 0" />
+                <origin xyz="0.017331 -3.8626E-05 -0.10014" rpy="0 0 0" />
                 <mass value="0.292483071997453" />
-                <inertia ixx="0.000903299669438753" ixy="-2.55525312562112E-11" ixz="0.000155678759259663" iyy="0.000949320326267258" iyz="1.05414825036111E-10" izz="6.30610325260309E-05" />
+                <inertia ixx="0.0015248" ixy="5E-08" ixz="0.00018011" iyy="0.00154677" iyz="-1.19E-06" izz="8.932E-05" />
             </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
@@ -384,9 +361,9 @@
                 </material>
             </visual>
             <collision>
-                <origin xyz="0 0 -0.1065" rpy="0 1.5708 0" />
+                <origin xyz="0.015 0 -0.1065" rpy="0 1.5708 0" />
                 <geometry>
-                    <box size="0.213 0.016 0.016" />
+                    <box size="0.213 0.036 0.056" />
                 </geometry>
             </collision>
         </link>
@@ -403,9 +380,8 @@
             <inertial>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <mass value="0.0335103216382911" />
-                <inertia ixx="5.36165146212658E-06" ixy="-7.94093388050967E-23" ixz="-3.17637355220363E-22" iyy="5.36165146212658E-06" iyz="1.32348898008481E-22" izz="5.36165146212658E-06" />
-                <!-- go2 对应参数: foot_mass=0.06, inertia approx ixx=iyy=izz=9.6e-06 -->
-            </inertial>
+                <inertia ixx="6.6833E-06" ixy="0" ixz="0" iyy="6.6833E-06" iyz="0" izz="6.6833E-06" />
+                </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
@@ -431,11 +407,10 @@
 
         <link name="RR_hip">
             <inertial>
-                <origin xyz="-0.049109 -0.0014996 1.9828E-05" rpy="0 0 0" />
+                <origin xyz="-0.061745 -0.0028979 3.544E-05" rpy="0 0 0" />
                 <mass value="0.62455" />
-                <inertia ixx="0.00051175" ixy="3.0689E-08" ixz="3.6249E-07" iyy="0.00080416" iyz="2.5347E-08" izz="0.00043104" />
-                <!-- go2 对应参数(后腿镜像): hip_mass=0.678, etc. -->
-            </inertial>
+                <inertia ixx="0.00087506" ixy="-6.37E-05" ixz="-1.4E-07" iyy="0.0021591" iyz="-2.9E-07" izz="0.0017684" />
+                </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
@@ -446,15 +421,14 @@
                 </material>
             </visual>
             <collision>
-                <!-- go2: rear-right hip collision cylinder at y=-0.0955 -->
-                <origin xyz="0 -0.0955 0" rpy="1.5708 0 0" />
+                <origin xyz="-0.085 0.0 0" rpy="1.5708 0 0" />
                 <geometry>
-                    <cylinder radius="0.046" length="0.04" />
+                    <cylinder radius="0.050" length="0.05" />
                 </geometry>
             </collision>
         </link>
         <joint name="RR_hip_joint" type="revolute">
-            <origin xyz="-0.0946 -0.062 -0.071" rpy="0 0 0" />
+            <origin xyz="-0.2146 -0.062 -0.071" rpy="0 0 0" />
             <parent link="trunk" />
             <child link="RR_hip" />
             <axis xyz="1 0 0" />
@@ -464,9 +438,9 @@
 
         <link name="RR_thigh">
             <inertial>
-                <origin xyz="0.00040284 -0.05094 -0.044849" rpy="0 0 0" />
+                <origin xyz="-1.296E-05 -0.04672352 -0.03438484" rpy="0 0 0" />
                 <mass value="1.107" />
-                <inertia ixx="0.0026249" ixy="-3.0685E-08" ixz="-3.4311E-05" iyy="0.0030336" iyz="-2.5044E-08" izz="0.00046586" />
+                <inertia ixx="0.00710643" ixy="2.19E-06" ixz="-0.00010864" iyy="0.0068114" iyz="-0.00118147" izz="0.00193099" />
             </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
@@ -478,9 +452,9 @@
                 </material>
             </visual>
             <collision>
-                <origin xyz="0 0 -0.1065" rpy="0 1.5708 0" />
+                <origin xyz="0 -0.071 -0.0965" rpy="0 1.5708 0" />
                 <geometry>
-                    <box size="0.213 0.0245 0.034" />
+                    <box size="0.283 0.0645 0.074" />
                 </geometry>
             </collision>
         </link>
@@ -495,9 +469,9 @@
 
         <link name="RR_calf">
             <inertial>
-                <origin xyz="0.0173100986135103 3.86344071778844E-05 -0.100139363133758" rpy="0 0 0" />
+                <origin xyz="0.01731 3.8634E-05 -0.10014" rpy="0 0 0" />
                 <mass value="0.292483071997452" />
-                <inertia ixx="0.000903102820321633" ixy="-2.56031425051499E-11" ixz="0.000156170060518886" iyy="0.000949320326267247" iyz="1.05394578891312E-10" izz="6.32578816431396E-05" />
+                <inertia ixx="0.00152456" ixy="-5E-08" ixz="0.00018073" iyy="0.00154675" iyz="1.19E-06" izz="8.954E-05" />
             </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
@@ -509,9 +483,9 @@
                 </material>
             </visual>
             <collision>
-                <origin xyz="0 0 -0.1065" rpy="0 1.5708 0" />
+                <origin xyz="0.015 0 -0.1065" rpy="0 1.5708 0" />
                 <geometry>
-                    <box size="0.213 0.016 0.016" />
+                    <box size="0.213 0.036 0.056" />
                 </geometry>
             </collision>
         </link>
@@ -528,9 +502,8 @@
             <inertial>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <mass value="0.0335103216382911" />
-                <inertia ixx="5.36165146212658E-06" ixy="-2.68773268713706E-23" ixz="-2.7811675003655E-22" iyy="5.36165146212658E-06" iyz="2.423491454722E-23" izz="5.36165146212658E-06" />
-                <!-- go2 对应参数: foot_mass=0.06, inertia approx ixx=iyy=izz=9.6e-06 -->
-            </inertial>
+                <inertia ixx="6.6833E-06" ixy="0" ixz="0" iyy="6.6833E-06" iyz="0" izz="6.6833E-06" />
+                </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
@@ -554,7 +527,6 @@
             <axis xyz="0 0 0" />
         </joint>
 
-        <!-- 关闭上肢部件自碰撞，防止穿模爆炸 -->
         <gazebo reference="trunk"> <self_collide>false</self_collide> </gazebo>
         <gazebo reference="FL_hip"> <self_collide>false</self_collide> </gazebo>
         <gazebo reference="FL_thigh"> <self_collide>false</self_collide> </gazebo>
@@ -569,7 +541,6 @@
         <gazebo reference="RR_thigh"> <self_collide>false</self_collide> </gazebo>
         <gazebo reference="RR_calf"> <self_collide>false</self_collide> </gazebo>
 
-        <!-- Gazebo contact parameters for feet -->
         <gazebo reference="FL_foot">
             <mu1>0.6</mu1>
             <mu2>0.6</mu2>
@@ -603,7 +574,6 @@
             <kd value="100.0"/>
         </gazebo>
 
-        <!-- Transmissions - 使用宏定义 -->
         <xacro:leg_transmission name="FL"/>
         <xacro:leg_transmission name="FR"/>
         <xacro:leg_transmission name="RL"/>

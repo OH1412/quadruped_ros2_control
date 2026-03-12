@@ -12,7 +12,12 @@ class QuadrupedRobot;
 
 class BalanceCtrl {
 public:
-    explicit BalanceCtrl(const std::shared_ptr<QuadrupedRobot>& robot);
+    // constructor takes robot model and an optional flag indicating whether
+    // simulation-style (unscaled) kp/kd gains are used. When running in sim the
+    // effective gravity should be the real value (-9.81), otherwise we boost it
+    // to -12.0 to compensate for modeling errors on the real robot.
+    explicit BalanceCtrl(const std::shared_ptr<QuadrupedRobot>& robot,
+                         bool use_sim_kp_kd = false);
 
     ~BalanceCtrl() = default;
 

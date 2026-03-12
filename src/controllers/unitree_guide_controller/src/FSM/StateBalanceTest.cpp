@@ -28,11 +28,21 @@ StateBalanceTest::StateBalanceTest(CtrlInterfaces &ctrl_interfaces,
     _yawMax = 20 * M_PI / 180;
     _yawMin = -_yawMax;
 
-    Kp_p_ = Vec3(15, 15, 15).asDiagonal();
-    Kd_p_ = Vec3(25, 25, 25).asDiagonal();
+    if (ctrl_interfaces_.use_sim_kp_kd_) {
+        // sim-friendly values
+        Kp_p_ = Vec3(150, 150, 150).asDiagonal();
+        Kd_p_ = Vec3(25, 25, 25).asDiagonal();
 
-    kp_w_ = 200;
-    Kd_w_ = Vec3(30, 30, 30).asDiagonal();
+        kp_w_ = 200;
+        Kd_w_ = Vec3(30, 30, 30).asDiagonal();
+    } else {
+        // scaled for real robot
+        Kp_p_ = Vec3(15, 15, 15).asDiagonal();
+        Kd_p_ = Vec3(25, 25, 25).asDiagonal();
+
+        kp_w_ = 200;
+        Kd_w_ = Vec3(30, 30, 30).asDiagonal();
+    }
 }
 
 void StateBalanceTest::enter() {

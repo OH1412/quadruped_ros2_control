@@ -18,12 +18,23 @@ StateTrotting::StateTrotting(CtrlInterfaces &ctrl_interfaces,
                                                               wave_generator_(ctrl_component.wave_generator_),
                                                               gait_generator_(ctrl_component) {
     gait_height_ = 0.08;
-    Kpp = Vec3(5, 5, 5).asDiagonal();
-    Kdp = Vec3(25, 25, 25).asDiagonal();
-    kp_w_ = 200;
-    Kd_w_ = Vec3(30, 30, 30).asDiagonal();
-    Kp_swing_ = Vec3(400, 400, 400).asDiagonal();
-    Kd_swing_ = Vec3(10, 10, 10).asDiagonal();
+    if (ctrl_interfaces_.use_sim_kp_kd_) {
+        // simulation-friendly gains (unscaled)
+        Kpp = Vec3(70, 70, 70).asDiagonal();
+        Kdp = Vec3(10, 10, 10).asDiagonal();
+        kp_w_ = 780;
+        Kd_w_ = Vec3(70, 70, 70).asDiagonal();
+        Kp_swing_ = Vec3(400, 400, 400).asDiagonal();
+        Kd_swing_ = Vec3(10, 10, 10).asDiagonal();
+    } else {
+        // real‑robot tuned gains (scaled down)
+        Kpp = Vec3(5, 5, 5).asDiagonal();
+        Kdp = Vec3(25, 25, 25).asDiagonal();
+        kp_w_ = 200;
+        Kd_w_ = Vec3(30, 30, 30).asDiagonal();
+        Kp_swing_ = Vec3(30, 30, 30).asDiagonal();
+        Kd_swing_ = Vec3(10, 10, 10).asDiagonal();
+    }
 
     v_x_limit_ << -0.4, 0.4;
     v_y_limit_ << -0.3, 0.3;
@@ -34,7 +45,14 @@ StateTrotting::StateTrotting(CtrlInterfaces &ctrl_interfaces,
 void StateTrotting::enter() {
     pcd_ = estimator_->getPosition();
     // pcd_(2) = -estimator_->getFeetPos2Body()(2, 0);
-    float height_offset = 0.1;      // 增加 5cm 的高度（向上）
+    float height_offset;
+    if (ctrl_interfaces_.use_sim_kp_kd_) {
+        // in simulation we don't add an artificial lift
+        height_offset = 0.0;
+    } else {
+        // real robot: raise body by 10 cm to avoid scuffing
+        height_offset = 0.1;
+    }
     pcd_(2) = -estimator_->getFeetPos2Body()(2, 0) + height_offset;
 
     v_cmd_body_.setZero();

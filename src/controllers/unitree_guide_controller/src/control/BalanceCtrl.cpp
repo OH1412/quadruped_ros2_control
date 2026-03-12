@@ -9,18 +9,29 @@
 
 #include "quadProgpp/QuadProg++.hh"
 
-BalanceCtrl::BalanceCtrl(const std::shared_ptr<QuadrupedRobot> &robot) {
+BalanceCtrl::BalanceCtrl(const std::shared_ptr<QuadrupedRobot> &robot,
+                           bool use_sim_kp_kd) {
     mass_ = robot->mass_;
 
     alpha_ = 0.001;
     beta_ = 0.1;
-    // g_ << 0, 0, -9.81;
-    g_ << 0, 0, -12.0;
+    // choose gravity based on gains configuration. the simulation gains assume
+    // perfect model so use real gravity; the real‑robot gains were tuned with an
+    // artificially increased gravity to help with stability.
+    if (use_sim_kp_kd) {
+        g_ << 0, 0, -9.81;
+    } else {
+        g_ << 0, 0, -12.0;
+    }
     friction_ratio_ = 0.4;
     friction_mat_ << 1, 0, friction_ratio_, -1, 0, friction_ratio_, 0, 1, friction_ratio_, 0, -1,
             friction_ratio_, 0, 0, 1;
 
-    pcb_ = Vec3(0.02, 0.01, 0.0);
+    if (use_sim_kp_kd) {
+        pcb_ = Vec3(-0.10, 0.00, 0.00);
+    } else {
+        pcb_ = Vec3(0.00, 0.00, 0.00);
+    }
     Ib_ = Vec3(0.0792, 0.2085, 0.2265).asDiagonal();
 
     Vec6 s;
