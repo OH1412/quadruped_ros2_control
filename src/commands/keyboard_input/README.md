@@ -35,3 +35,4 @@ ros2 run keyboard_input keyboard_input
 ### 1.2 运动控制
 * `WASD` / `IJKL`：前后左右/姿态调整（具体含义视控制器配置而定）
 * `Space`：将速度指令清零
+* `7` 或 `Shift+7`（在终端里会生成 `&`）：在小跑（Trot）模式下触发原地踏步（Wave All）

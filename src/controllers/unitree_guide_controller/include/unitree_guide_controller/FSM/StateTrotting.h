@@ -61,6 +61,11 @@ private:
     Vec3 pos_body_, vel_body_;
     RotMat B2G_RotMat, G2B_RotMat;
 
+    // in-place stepping support
+    bool stepping_mode_;
+    rclcpp::Time step_start_time_;
+    double step_duration_threshold_;
+
     // Robot command
     Vec3 pcd_;
     Vec3 vel_target_, v_cmd_body_;

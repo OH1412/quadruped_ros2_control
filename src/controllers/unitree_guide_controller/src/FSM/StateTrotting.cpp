@@ -8,6 +8,7 @@
 #include <unitree_guide_controller/control/CtrlComponent.h>
 #include <unitree_guide_controller/control/Estimator.h>
 #include <unitree_guide_controller/gait/WaveGenerator.h>
+#include <rclcpp/clock.hpp>
 
 StateTrotting::StateTrotting(CtrlInterfaces &ctrl_interfaces,
                              CtrlComponent &ctrl_component) : FSMState(FSMStateName::TROTTING, "trotting",
@@ -17,6 +18,9 @@ StateTrotting::StateTrotting(CtrlInterfaces &ctrl_interfaces,
                                                               balance_ctrl_(ctrl_component.balance_ctrl_),
                                                               wave_generator_(ctrl_component.wave_generator_),
                                                               gait_generator_(ctrl_component) {
+    // in-place stepping helper
+    stepping_mode_ = false;
+    step_duration_threshold_ = 5.0; // seconds, adjust as needed
     gait_height_ = 0.08;
     if (ctrl_interfaces_.use_sim_kp_kd_) {
         // simulation-friendly gains (unscaled)
@@ -80,6 +84,15 @@ void StateTrotting::run(const rclcpp::Time &/*time*/, const rclcpp::Duration &/*
     calcTau();
     calcQQd();
 
+    // if stepping mode active, validate duration
+    if (stepping_mode_) {
+        const double elapsed = (rclcpp::Clock().now() - step_start_time_).seconds();
+        if (elapsed > step_duration_threshold_) {
+            stepping_mode_ = false;  // timer expired
+        }
+    }
+
+    // waveall either when stepping mode requested or normal conditions trigger
     if (checkStepOrNot()) {
         wave_generator_->status_ = WaveStatus::WAVE_ALL;
     } else {
@@ -114,6 +127,13 @@ void StateTrotting::getUserCmd() {
     d_yaw_cmd_ = -invNormalize(ctrl_interfaces_.control_inputs_.rx, w_yaw_limit_(0), w_yaw_limit_(1));
     d_yaw_cmd_ = 0.9 * d_yaw_cmd_past_ + (1 - 0.9) * d_yaw_cmd_;
     d_yaw_cmd_past_ = d_yaw_cmd_;
+
+    // check for step command (keyboard key '7')
+    // command==7 is only interpreted while in trotting state
+    if (ctrl_interfaces_.control_inputs_.command == 7 && !stepping_mode_) {
+        stepping_mode_ = true;
+        step_start_time_ = rclcpp::Clock().now();
+    }
 }
 
 void StateTrotting::calcCmd() {
@@ -234,6 +254,18 @@ void StateTrotting::calcGain() const {
 }
 
 bool StateTrotting::checkStepOrNot() {
+    // if we just requested an in-place step, and the timer hasn't expired,
+    // return true so that wave_generator stays in WAVE_ALL.  
+    if (stepping_mode_) {
+        const double elapsed = (rclcpp::Clock().now() - step_start_time_).seconds();
+        if (elapsed <= step_duration_threshold_) {
+            return true;
+        }
+        else {
+            stepping_mode_ = false;  // timer expired, clear stepping mode
+        }
+        // otherwise stepping mode will be cleared in run()
+    }
     // Always remain in stance for all feet regardless of commanded speed or errors.
     // This prevents switching to a trotting gait based on velocity.
     // The original logic below was used to trigger stepping when movement commands

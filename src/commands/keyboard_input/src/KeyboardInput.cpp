@@ -67,8 +67,10 @@ void KeyboardInput::check_command(const char key) {
         case '6':
             inputs_.command = 6; // L1_B
             break;
+        // accept either '7' or shift+7 ('&') as the step command
         case '7':
-            inputs_.command = 7; // L1_X
+        case '&': // shift+7 produces '&' on most keyboards
+            inputs_.command = 7; // L1_X / step command
             break;
         case '8':
             inputs_.command = 8; // L1_Y
