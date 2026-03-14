@@ -17,7 +17,8 @@ StateTrotting::StateTrotting(CtrlInterfaces &ctrl_interfaces,
                                                               robot_model_(ctrl_component.robot_model_),
                                                               balance_ctrl_(ctrl_component.balance_ctrl_),
                                                               wave_generator_(ctrl_component.wave_generator_),
-                                                              gait_generator_(ctrl_component) {
+                                                              gait_generator_(ctrl_component),
+                                                              ctrl_component_ref_(ctrl_component) {
     // in-place stepping helper
     stepping_mode_ = false;
     step_duration_threshold_ = 5.0; // seconds, adjust as needed
@@ -198,6 +199,40 @@ void StateTrotting::calcTau() {
         for (int j = 0; j < 3; j++) {
             ctrl_interfaces_.joint_torque_command_interface_[i * 3 + j].get().set_value(torque(j));
         }
+    }
+
+    // Reconstruct foot forces from measured/estimated joint torques (if available)
+    for (int i = 0; i < 4; ++i) {
+        KDL::JntArray measured_tau(3);
+        for (int j = 0; j < 3; ++j) {
+            measured_tau(j) = ctrl_interfaces_.joint_effort_state_interface_[i * 3 + j].get().get_value();
+        }
+        KDL::Vector f_body = robot_model_->getForceFromTorque(measured_tau, i);
+        // convert to global frame
+        Eigen::Vector3d f_body_eig(f_body(0), f_body(1), f_body(2));
+        Eigen::Vector3d f_global = B2G_RotMat * f_body_eig;
+        measured_force_feet_global_.col(i) = f_global;
+    }
+
+    // If configured, override contact vector using measured foot forces and thresholds
+    if (ctrl_component_ref_.contact_mode_ == 1) {
+        VecInt4 contact_est;
+        for (int i = 0; i < 4; ++i) {
+            double fz = measured_force_feet_global_(2, i);
+            bool in_contact = false;
+            if (ctrl_component_ref_.contact_all_threshold_ != 0.0) {
+                in_contact = (fz < ctrl_component_ref_.contact_all_threshold_);
+            } else {
+                // assume legs 0,1 are front; 2,3 are rear
+                if (i < 2) {
+                    in_contact = (fz < ctrl_component_ref_.contact_front_threshold_);
+                } else {
+                    in_contact = (fz < ctrl_component_ref_.contact_rear_threshold_);
+                }
+            }
+            contact_est(i) = in_contact ? 1 : 0;
+        }
+        wave_generator_->contact_ = contact_est;
     }
 }
 

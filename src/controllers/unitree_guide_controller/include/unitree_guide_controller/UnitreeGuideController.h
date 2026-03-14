@@ -117,6 +117,7 @@ namespace unitree_guide_controller {
 
         // publishers for intermediate variables
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr foot_force_pub_;
+        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr estimated_foot_force_pub_;
         // split body state into separate topics for clarity
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr body_pos_pub_;
         rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr body_vel_pub_;
@@ -159,6 +160,8 @@ namespace unitree_guide_controller {
             {"effort", &ctrl_interfaces_.joint_effort_state_interface_},
             {"velocity", &ctrl_interfaces_.joint_velocity_state_interface_}
         };
+
+        // contact parameters moved into CtrlComponent (single source)
     };
 }
 

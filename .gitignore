@@ -4,6 +4,7 @@ install/*
 log/*
 logs/*
 joint_plots/*
+foot_force_plots/*
 docs/*
 src/estimations/dependencies_and_tools/livox_imu_converter/livox_imu_converter/*
 src/estimations/dependencies_and_tools/ws_livox/build/*

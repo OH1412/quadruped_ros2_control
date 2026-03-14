@@ -71,6 +71,11 @@ public:
         const KDL::Vector &force, int index) const;
 
     /**
+     * Estimate end-effector force from joint torques for a given leg.
+     */
+    [[nodiscard]] KDL::Vector getForceFromTorque(const KDL::JntArray &torque, int index) const;
+
+    /**
      * Calculate the foot end velocity
      * @param index leg index
      * @return velocity vector

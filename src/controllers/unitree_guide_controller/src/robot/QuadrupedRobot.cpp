@@ -101,6 +101,10 @@ KDL::Vector QuadrupedRobot::getFeet2BVelocities(const int index) const {
     return {foot_velocity(0), foot_velocity(1), foot_velocity(2)};
 }
 
+KDL::Vector QuadrupedRobot::getForceFromTorque(const KDL::JntArray &torque, int index) const {
+    return robot_legs_[index]->calcForceFromTorque(current_joint_pos_[index], torque);
+}
+
 std::vector<KDL::Vector> QuadrupedRobot::getFeet2BVelocities() const {
     std::vector<KDL::Vector> result;
     result.resize(4);

@@ -42,3 +42,17 @@ KDL::JntArray RobotLeg::calcTorque(const KDL::JntArray &joint_positions, const V
     }
     return torque;
 }
+
+KDL::Vector RobotLeg::calcForceFromTorque(const KDL::JntArray &joint_positions,
+                                          const KDL::JntArray &torque) const {
+    const Eigen::Matrix<double, 3, Eigen::Dynamic> jacobian = calcJaco(joint_positions).data.topRows(3);
+    // torque = J^T * f  =>  solve for f
+    Eigen::VectorXd torque_eigen(chain_.getNrOfJoints());
+    for (unsigned int i = 0; i < chain_.getNrOfJoints(); ++i) {
+        torque_eigen(i) = torque(i);
+    }
+    // solve J^T * f = torque_eigen for f using a robust linear solver
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> JT = jacobian.transpose();
+    Eigen::Vector3d f = JT.colPivHouseholderQr().solve(torque_eigen);
+    return KDL::Vector(f(0), f(1), f(2));
+}

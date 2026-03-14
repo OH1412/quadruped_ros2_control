@@ -8,6 +8,7 @@
 #include <unitree_guide_controller/gait/GaitGenerator.h>
 #include <unitree_guide_controller/gait/WaveGenerator.h> // for contact vector type
 #include <unitree_guide_controller/control/Estimator.h> // required for inline getter
+#include <unitree_guide_controller/control/CtrlComponent.h>
 #include "controller_common/FSM/FSMState.h"
 
 class StateTrotting final : public FSMState {
@@ -77,6 +78,11 @@ private:
 
     // latest computed forces in global frame (4 legs ×3 axes)
     Vec34 force_feet_global_;
+    // latest estimated/measured foot forces (reconstructed from joint torques)
+    Vec34 measured_force_feet_global_;
+
+    // Note: contact parameters are read from shared CtrlComponent (single source)
+    CtrlComponent &ctrl_component_ref_;
 
 public:
     // getters for monitoring/publishing
@@ -87,6 +93,7 @@ public:
     double getYawCmd() const { return yaw_cmd_; }
     Vec34 getPosFeetGlobalGoal() const { return pos_feet_global_goal_; }
     Vec34 getForceFeetGlobal() const { return force_feet_global_; }
+    Vec34 getMeasuredForceFeetGlobal() const { return measured_force_feet_global_; }
     // current foot positions (global frame), used for visualization
     Vec34 getFeetPositionGlobal() const { return estimator_->getFeetPos(); }
     // contact status from wave generator (0 swing, 1 contact)

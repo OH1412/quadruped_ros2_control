@@ -35,6 +35,35 @@ def launch_setup(context, *args, **kwargs):
             )
         )
 
+    # optionally append contact-mode overrides based on launch args and robot description
+    contact_mode = context.launch_configurations.get('contact_mode', '0')
+    if contact_mode == '1':
+        pkg_desc = context.launch_configurations.get('pkg_description', '')
+        if 'go2' in pkg_desc:
+            controller_parameters.append(
+                os.path.join(
+                    get_package_share_directory('unitree_guide_controller'),
+                    'config',
+                    'contact_mode_go2.yaml',
+                )
+            )
+        elif 'mybot' in pkg_desc:
+            controller_parameters.append(
+                os.path.join(
+                    get_package_share_directory('unitree_guide_controller'),
+                    'config',
+                    'contact_mode_mybot.yaml',
+                )
+            )
+        else:
+            controller_parameters.append(
+                os.path.join(
+                    get_package_share_directory('unitree_guide_controller'),
+                    'config',
+                    'contact_mode_default.yaml',
+                )
+            )
+
     rviz_config_file = os.path.join(get_package_share_directory(package_description), "config", "visualize_urdf.rviz")
 
     rviz = Node(
@@ -122,8 +151,15 @@ def generate_launch_description():
         description='If true, use simulation kp/kd parameters (mujoco)'
     )
 
+    contact_mode_arg = DeclareLaunchArgument(
+        'contact_mode',
+        default_value='0',
+        description='Contact detection mode: 0=phase-based, 1=force-threshold-based'
+    )
+
     return LaunchDescription([
         pkg_description,
         use_sim_arg,
+        contact_mode_arg,
         OpaqueFunction(function=launch_setup),
     ])

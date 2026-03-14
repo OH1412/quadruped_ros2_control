@@ -1,0 +1,4 @@
+unitree_guide_controller:
+  ros__parameters:
+    contact_mode: 1
+    contact_all_threshold: -20.0

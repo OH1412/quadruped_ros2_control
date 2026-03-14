@@ -48,6 +48,13 @@ public:
      */
     [[nodiscard]] KDL::JntArray calcTorque(const KDL::JntArray &joint_positions, const Vec3 &force) const;
 
+    /**
+     * Estimate end-effector force from joint torques using the (J^T)^{-1} mapping.
+     * Solves J^T * f = torque for f.
+     */
+    [[nodiscard]] KDL::Vector calcForceFromTorque(const KDL::JntArray &joint_positions,
+                                                  const KDL::JntArray &torque) const;
+
 protected:
     KDL::Chain chain_;
     std::shared_ptr<KDL::ChainFkSolverPos_recursive> fk_pose_solver_;

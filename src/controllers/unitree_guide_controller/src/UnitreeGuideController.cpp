@@ -184,6 +184,19 @@ namespace unitree_guide_controller
             }
             foot_force_pub_->publish(ff_msg);
 
+            // publish reconstructed/measured foot forces (from joint torques) if trotting
+            if (auto trotting = std::dynamic_pointer_cast<StateTrotting>(current_state_)) {
+                Vec34 measured = trotting->getMeasuredForceFeetGlobal();
+                std_msgs::msg::Float32MultiArray me_msg;
+                me_msg.data.resize(12);
+                for (int leg = 0; leg < 4; ++leg) {
+                    for (int axis = 0; axis < 3; ++axis) {
+                        me_msg.data[leg * 3 + axis] = measured(axis, leg);
+                    }
+                }
+                estimated_foot_force_pub_->publish(me_msg);
+            }
+
             // update foot trajectory visualization (only during trotting state)
             if (foot_vis_) {
                 if (auto trotting = std::dynamic_pointer_cast<StateTrotting>(current_state_)) {
@@ -247,6 +260,12 @@ namespace unitree_guide_controller
             get_node()->get_parameter("update_rate", ctrl_interfaces_.frequency_);
             RCLCPP_INFO(get_node()->get_logger(), "Controller Manager Update Rate: %d Hz", ctrl_interfaces_.frequency_);
 
+            // contact-mode parameters (optional) -> store in shared CtrlComponent
+            ctrl_component_.contact_mode_ = auto_declare<int>("contact_mode", ctrl_component_.contact_mode_);
+            ctrl_component_.contact_front_threshold_ = auto_declare<double>("contact_front_threshold", ctrl_component_.contact_front_threshold_);
+            ctrl_component_.contact_rear_threshold_ = auto_declare<double>("contact_rear_threshold", ctrl_component_.contact_rear_threshold_);
+            ctrl_component_.contact_all_threshold_ = auto_declare<double>("contact_all_threshold", ctrl_component_.contact_all_threshold_);
+
             ctrl_component_.estimator_ = std::make_shared<Estimator>(ctrl_interfaces_, ctrl_component_);
         }
         catch (const std::exception& e)
@@ -286,6 +305,8 @@ namespace unitree_guide_controller
         // intermediate-variable publishers
         foot_force_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
             "/guide/foot_force", 10);
+        estimated_foot_force_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
+            "/guide/estimated_foot_force", 10);
         body_pos_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
             "/guide/body_pos", 10);
         body_vel_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
@@ -353,6 +374,8 @@ namespace unitree_guide_controller
         state_list_.freeStand = std::make_shared<StateFreeStand>(ctrl_interfaces_, ctrl_component_);
         state_list_.balanceTest = std::make_shared<StateBalanceTest>(ctrl_interfaces_, ctrl_component_);
         state_list_.trotting = std::make_shared<StateTrotting>(ctrl_interfaces_, ctrl_component_);
+
+        // trotting state reads contact params directly from CtrlComponent (single source)
 
         // Initialize FSM
         current_state_ = state_list_.passive;
