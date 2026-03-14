@@ -2,12 +2,12 @@
 // Created by tlab-uav on 24-9-26.
 //
 
+#include <rclcpp/rclcpp.hpp>
 #include <utility>
 
 #include "ocs2_quadruped_controller/control/GaitManager.h"
 
 #include <ocs2_core/misc/LoadData.h>
-#include <rclcpp/logging.hpp>
 
 namespace ocs2::legged_robot
 {

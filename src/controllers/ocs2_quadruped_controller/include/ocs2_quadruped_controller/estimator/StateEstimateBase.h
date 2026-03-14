@@ -50,7 +50,6 @@ namespace ocs2::legged_robot
 
         contact_flag_t contact_flag_{};
         double feet_force_threshold_ = 5.0;
-        bool use_foot_force_contact_ = true;
 
         std::string odom_topic_ = "odom";
 

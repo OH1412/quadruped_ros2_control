@@ -1,48 +1,47 @@
 # OCS2 Quadruped Controller
 
-本包是 quadruped_ros2_control 工程中的 NMPC 四足控制器，基于 [legged_control](https://github.com/qiayuanl/legged_control) 与 [ocs2_ros2](https://github.com/legubiao/ocs2_ros2)，提供鲁棒的模型预测控制并支持多种商用 / 自研四足平台。
+This is a ros2-control controller based on [legged_control](https://github.com/qiayuanl/legged_control)
+and [ocs2_ros2](https://github.com/legubiao/ocs2_ros2).
 
-测试环境：
+Tested environment:
 
 * Ubuntu 24.04
     * ROS2 Jazzy
 * Ubuntu 22.04
     * ROS2 Humble
 
-更新记录：
+* [x] **[2025-01-16]** Add support for ground truth estimator.
+* [x] **[2025-03-15]** OCS2 Controller now can switch between passive and MPC mode.
 
-* [x] **[2025-01-16]** 增加对地面真值估计器（ground truth estimator）的支持
-* [x] **[2025-03-15]** 控制器支持在被动模式与 MPC 模式之间切换
 
 [![](http://i0.hdslb.com/bfs/archive/e758ce019587032449a153cf897a543443b64bba.jpg)](https://www.bilibili.com/video/BV1UcxieuEmH/)
 
-## 1. 接口说明
+## 1. Interfaces
 
-所需 ros2-control 硬件接口：
+Required hardware interfaces:
 
-* command（写入）：
-    * 关节位置（joint position）
-    * 关节速度（joint velocity）
-    * 关节力矩（joint effort）
-    * KP 增益
-    * KD 增益
-* state（读取）：
-    * 关节力矩（joint effort）
-    * 关节位置（joint position）
-    * 关节速度（joint velocity）
-    * IMU 传感器：
-        * 线加速度（linear acceleration）
-        * 角速度（angular velocity）
-        * 姿态四元数（orientation）
-    * 足端力传感器（feet force sensor）
+* command:
+    * joint position
+    * joint velocity
+    * joint effort
+    * KP
+    * KD
+* state:
+    * joint effort
+    * joint position
+    * joint velocity
+    * imu sensor
+        * linear acceleration
+        * angular velocity
+        * orientation
+    * feet force sensor
 
-## 2. 编译
+## 2. Build
 
-### 2.1 依赖准备（OCS2 + Pinocchio）
+### 2.1 Build Dependencies
+Before install OCS2 ROS2, please follow the guide to install [Pinocchio](https://stack-of-tasks.github.io/pinocchio/download.html). **Don't use the pinocchio install by rosdep**!
 
-在安装 OCS2 相关包之前，需要先根据官方文档安装 [Pinocchio](https://stack-of-tasks.github.io/pinocchio/download.html)。**不要使用 rosdep 安装的 pinocchio 版本。**
-
-安装好 Pinocchio 后，在工作空间中克隆并安装 ocs2_ros2：
+**After installed Pinocchio**, follow below step to clone ocs2 ros2 library to src folder.
 
 ```bash
 cd ~/ros2_ws/src
@@ -55,16 +54,16 @@ cd ..
 rosdep install --from-paths src --ignore-src -r -y
 ```
 
-### 2.2 编译 OCS2 四足控制器
+### 2.2 Build OCS2 Quadruped Controller
 
 ```bash
 cd ~/ros2_ws
-colcon build --packages-up-to ocs2_quadruped_controller --symlink-install
+colcon build --packages-up-to ocs2_quadruped_controller  --symlink-install
 ```
 
-## 3. 启动与使用
+## 3. Launch
 
-### 3.1 支持的机器人描述包
+supported robot description:
 
 * Unitree
     * go2_description
@@ -80,11 +79,11 @@ colcon build --packages-up-to ocs2_quadruped_controller --symlink-install
 * Anybotics
     * anymal_c_description
 
-### 3.2 关于 OCS2 生成的共享库
+### 3.1 About OCS2 Shared Library
+OCS2 Quadruped controller depends on the OCS2 library, it required c++ automatic differentiation shared library. When first launch the controller, it will compile the OCS2 model and generate the shared library. 
 
-OCS2 四足控制器依赖基于 C++ 自动微分的共享库。首次启动控制器时，会自动编译相应的 OCS2 模型并生成 `.so` 文件，你可能会在终端看到类似输出：
-
-```text
+You may see something similar to:
+```
 [gazebo-5] [CppAdInterface] Compiling Shared Library: /home/biao/ocs2_cpp_ad/b2/RR_foot_position/cppad_generated/RR_foot_position_libcppadcg_tmp-27918274.so
 [gazebo-5] [CppAdInterface] Renaming /home/biao/ocs2_cpp_ad/b2/RR_foot_position/cppad_generated/RR_foot_position_libcppadcg_tmp-27918274.so to /home/biao/ocs2_cpp_ad/b2/RR_foot_position/cppad_generated/RR_foot_position_lib.so
 [gazebo-5] [CppAdInterface] Compiling Shared Library: /home/biao/ocs2_cpp_ad/b2/RR_foot_velocity/cppad_generated/RR_foot_velocity_libcppadcg_tmp-94918274.so
@@ -92,33 +91,28 @@ OCS2 四足控制器依赖基于 C++ 自动微分的共享库。首次启动控�
 [gazebo-5] [CppAdInterface] Compiling Shared Library: /home/biao/ocs2_cpp_ad/b2/RR_foot_orientation/cppad_generated/RR_foot_orientation_libcppadcg_tmp-83618274.so
 [gazebo-5] [CppAdInterface] Renaming /home/biao/ocs2_cpp_ad/b2/RR_foot_orientation/cppad_generated/RR_foot_orientation_libcppadcg_tmp-83618274.so to /home/biao/ocs2_cpp_ad/b2/RR_foot_orientation/cppad_generated/RR_foot_orientation_lib.so
 ```
+The compilation process may take a few minutes. After the compilation, restart the controller and the robot should stand up.
 
-这一步可能需要几分钟时间，完成后重启控制器，机器人即可正常站立。
+To config the path for the cppAD shared library, you can modify the `modelFolderCppAd` item in `task.info` file, which located at the `config/ocs2` folder under robot description package. If the path is not start with `/`, it will be considered as **relative path to the Linux Home folder**.
 
-共享库输出路径由机器人描述包下 `config/ocs2` 目录中的 `task.info` 文件配置，其中 `modelFolderCppAd` 字段若不是以 `/` 开头，则会被视为“相对于当前用户 Home 目录的相对路径”。
+### 3.2 Usage
+#### Keyboard State Switch
+* Keyboard 1 : Passive Mode
+* Keyboard 2 : OCS2 MPC Mode
+  * Keyboard 2: stance
+  * Keyboard 3: trot
+  * Keyboard 4: standing_trot
+  * Keyboard 5: flying_trot
 
-### 3.3 键盘模式切换
-
-* 键盘 `1`：被动模式（Passive Mode）
-* 键盘 `2`：OCS2 MPC 模式
-    * 再次按 `2`：站立（stance）
-    * 键盘 `3`：小跑（trot）
-    * 键盘 `4`：站立小跑（standing_trot）
-    * 键盘 `5`：飞行小跑（flying_trot）
-
-### 3.4 启动控制器
-
-#### MuJoCo 仿真
-
-> 提示：在启动控制器前，需要先根据 https://github.com/legubiao/unitree_mujoco 启动 Unitree MuJoCo C++ 仿真。
-
+### 3.3 Launch Controller
+#### Mujoco Simulation
+> **Warm Reminder**: You need to launch [Unitree Mujoco C++ Simulation](https://github.com/legubiao/unitree_mujoco) before launch the controller.
 ```bash
 source ~/ros2_ws/install/setup.bash
 ros2 launch ocs2_quadruped_controller mujoco.launch.py pkg_description:=go2_description
 ```
 
-#### Gazebo 仿真
-
+#### Gazebo Launch
 ```bash
 source ~/ros2_ws/install/setup.bash
 ros2 launch ocs2_quadruped_controller gazebo.launch.py pkg_description:=go2_description
