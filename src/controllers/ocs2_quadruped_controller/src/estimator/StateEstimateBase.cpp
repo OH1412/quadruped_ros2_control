@@ -20,6 +20,16 @@ namespace ocs2::legged_robot
           info_(std::move(info)),
           rbd_state_(vector_t::Zero(2 * info_.generalizedCoordinatesNum)), node_(std::move(node))
     {
+        // contact mode: 0 = original threshold, 1 = GMO+fusion
+        if (!node_->has_parameter("contact_mode")) {
+            node_->declare_parameter("contact_mode", contact_mode_);
+        }
+        contact_mode_ = node_->get_parameter("contact_mode").as_int();
+
+        if (contact_mode_ == 1) {
+            gmo_detector_ = std::make_unique<GMOContactDetector>(info_, ctrl_component_, node_);
+        }
+
         if (!node_->has_parameter("odom_topic")) {
             node_->declare_parameter("odom_topic", odom_topic_);
         }
@@ -46,10 +56,29 @@ namespace ocs2::legged_robot
     void StateEstimateBase::updateContact()
     {
         const size_t size = ctrl_component_.foot_force_state_interface_.size();
-        for (int i = 0; i < size; i++)
+        if (contact_mode_ == 1 && gmo_detector_)
         {
-            contact_flag_[i] = ctrl_component_.foot_force_state_interface_[i].get().get_value() >
-                feet_force_threshold_;
+            // prepare joint torques and rbd state
+            vector_t joint_torques(size * 3); // conservative size; actual mapping may differ
+            for (size_t i = 0; i < ctrl_component_.joint_effort_state_interface_.size(); ++i)
+            {
+                joint_torques(i) = ctrl_component_.joint_effort_state_interface_[i].get().get_value();
+            }
+            // simple dt estimate: not available here, pass small dt
+            double dt = 0.001;
+            gmo_detector_->update(rbd_state_, joint_torques, dt);
+            for (int i = 0; i < (int)size; i++)
+            {
+                contact_flag_[i] = gmo_detector_->getContactProb(i) > 0.5;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < (int)size; i++)
+            {
+                contact_flag_[i] = ctrl_component_.foot_force_state_interface_[i].get().get_value() >
+                    feet_force_threshold_;
+            }
         }
     }
 

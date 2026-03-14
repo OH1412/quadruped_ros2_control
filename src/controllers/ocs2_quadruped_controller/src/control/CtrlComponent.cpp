@@ -95,6 +95,11 @@ namespace ocs2::legged_robot
                 legged_interface_->getCentroidalModelInfo(), ctrl_interfaces_, node_);
             RCLCPP_INFO(node_->get_logger(), "Using Odom Topic Based Estimator");
         }
+        // Inject RBD and EE helpers into estimator (so GMO can use precise computations)
+        if (estimator_)
+        {
+            estimator_->setRbdAndKinematics(rbd_conversions_.get(), ee_kinematics_.get());
+        }
         observation_.time = 0;
     }
 

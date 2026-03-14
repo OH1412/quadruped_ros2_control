@@ -107,7 +107,14 @@ def generate_launch_description():
         description='package for robot description'
     )
 
+    contact_mode_arg = DeclareLaunchArgument(
+        'contact_mode',
+        default_value='0',
+        description='Contact detection mode: 0=original, 1=GMO+fusion'
+    )
+
     return LaunchDescription([
         pkg_description,
+        contact_mode_arg,
         OpaqueFunction(function=launch_setup),
     ])

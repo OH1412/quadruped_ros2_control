@@ -15,6 +15,7 @@
 #include <ocs2_legged_robot/gait/MotionPhaseDefinition.h>
 #include <ocs2_pinocchio_interface/PinocchioEndEffectorKinematics.h>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
+#include "ocs2_quadruped_controller/estimator/GMOContactDetector.h"
 
 namespace ocs2::legged_robot
 {
@@ -25,6 +26,15 @@ namespace ocs2::legged_robot
 
         StateEstimateBase(CentroidalModelInfo info, CtrlInterfaces& ctrl_component,
                           rclcpp_lifecycle::LifecycleNode::SharedPtr node);
+
+        // setter to provide RBD / EE helpers after estimator creation
+        void setRbdAndKinematics(ocs2::CentroidalModelRbdConversions* rbdConv,
+                                 ocs2::PinocchioEndEffectorKinematics* eeKinematics)
+        {
+            rbd_conversions_ptr_ = rbdConv;
+            ee_kinematics_ptr_ = eeKinematics;
+            if (gmo_detector_) gmo_detector_->setHelpers(rbdConv, eeKinematics);
+        }
 
         virtual void updateJointStates();
 
@@ -47,9 +57,16 @@ namespace ocs2::legged_robot
 
         CtrlInterfaces& ctrl_component_;
         CentroidalModelInfo info_;
-
+        std::unique_ptr<GMOContactDetector> gmo_detector_;
+        int contact_mode_ = 0;
         contact_flag_t contact_flag_{};
         double feet_force_threshold_ = 5.0;
+
+        // optional helpers injected from CtrlComponent
+        ocs2::CentroidalModelRbdConversions* rbd_conversions_ptr_ = nullptr;
+        ocs2::PinocchioEndEffectorKinematics* ee_kinematics_ptr_ = nullptr;
+
+        // (moved to public) no duplicate implementation here
 
         std::string odom_topic_ = "odom";
 
