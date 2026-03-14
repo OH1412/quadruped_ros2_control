@@ -32,7 +32,7 @@ StateTrotting::StateTrotting(CtrlInterfaces &ctrl_interfaces,
         Kd_swing_ = Vec3(10, 10, 10).asDiagonal();
     } else {
         // real‑robot tuned gains (scaled down)
-        Kpp = Vec3(5, 5, 5).asDiagonal();
+        Kpp = Vec3(5, 15, 5).asDiagonal();
         Kdp = Vec3(25, 25, 25).asDiagonal();
         kp_w_ = 200;
         Kd_w_ = Vec3(30, 30, 30).asDiagonal();

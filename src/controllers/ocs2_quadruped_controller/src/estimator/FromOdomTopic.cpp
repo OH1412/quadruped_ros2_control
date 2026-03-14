@@ -10,7 +10,7 @@ namespace ocs2::legged_robot {
         std::move(info), ctrl_component,
         node) {
         odom_sub_ = node_->create_subscription<nav_msgs::msg::Odometry>(
-            "/odom", 10, [this](const nav_msgs::msg::Odometry::SharedPtr msg) {
+            odom_topic_, 10, [this](const nav_msgs::msg::Odometry::SharedPtr msg) {
                 buffer_.writeFromNonRT(*msg);
             });
     }

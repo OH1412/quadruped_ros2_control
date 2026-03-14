@@ -11,7 +11,7 @@ from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64MultiArray
 from unitree_motor_msgs.msg import UnitreeCommand
 
-#使用命令：ros2 run unitree_m8010_controller m8010_controller --ros-args \
+# #使用命令：ros2 run unitree_m8010_controller m8010_controller --ros-args \
 #   -p enable_mask:="[1,1,1,1,1,1,1,1,1,1,1,1]"
 
 

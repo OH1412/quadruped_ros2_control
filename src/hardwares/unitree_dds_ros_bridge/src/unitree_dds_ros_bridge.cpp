@@ -37,6 +37,11 @@ public:
         declare_parameter<std::string>("state_foot_force_topic", "/foot_force");
         declare_parameter<std::string>("state_odometry_topic", "/odometry");
 
+        declare_parameter<bool>("enable_joint_states", true);
+        declare_parameter<bool>("enable_imu", true);
+        declare_parameter<bool>("enable_foot_force", true);
+        declare_parameter<bool>("enable_odometry", true);
+
         declare_parameter<std::string>("command_joint_topic", "/joint_commands");
         declare_parameter<std::string>("command_kp_topic", "/kp_commands");
         declare_parameter<std::string>("command_kd_topic", "/kd_commands");
@@ -51,6 +56,11 @@ public:
         state_imu_topic_ = get_parameter("state_imu_topic").as_string();
         state_foot_force_topic_ = get_parameter("state_foot_force_topic").as_string();
         state_odometry_topic_ = get_parameter("state_odometry_topic").as_string();
+
+        enable_joint_states_ = get_parameter("enable_joint_states").as_bool();
+        enable_imu_ = get_parameter("enable_imu").as_bool();
+        enable_foot_force_ = get_parameter("enable_foot_force").as_bool();
+        enable_odometry_ = get_parameter("enable_odometry").as_bool();
 
         command_joint_topic_ = get_parameter("command_joint_topic").as_string();
         command_kp_topic_ = get_parameter("command_kp_topic").as_string();
@@ -73,14 +83,26 @@ public:
         cmd_kp_.assign(joint_names_.size(), 0.0);
         cmd_kd_.assign(joint_names_.size(), 0.0);
 
-        joint_state_pub_ = create_publisher<sensor_msgs::msg::JointState>(
-            state_joint_topic_, rclcpp::SensorDataQoS());
-        imu_pub_ = create_publisher<sensor_msgs::msg::Imu>(
-            state_imu_topic_, rclcpp::SensorDataQoS());
-        foot_force_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>(
-            state_foot_force_topic_, rclcpp::SensorDataQoS());
-        odom_pub_ = create_publisher<nav_msgs::msg::Odometry>(
-            state_odometry_topic_, rclcpp::SensorDataQoS());
+        if (enable_joint_states_)
+        {
+            joint_state_pub_ = create_publisher<sensor_msgs::msg::JointState>(
+                state_joint_topic_, rclcpp::SensorDataQoS());
+        }
+        if (enable_imu_)
+        {
+            imu_pub_ = create_publisher<sensor_msgs::msg::Imu>(
+                state_imu_topic_, rclcpp::SensorDataQoS());
+        }
+        if (enable_foot_force_)
+        {
+            foot_force_pub_ = create_publisher<std_msgs::msg::Float32MultiArray>(
+                state_foot_force_topic_, rclcpp::SensorDataQoS());
+        }
+        if (enable_odometry_)
+        {
+            odom_pub_ = create_publisher<nav_msgs::msg::Odometry>(
+                state_odometry_topic_, rclcpp::SensorDataQoS());
+        }
 
         joint_cmd_sub_ = create_subscription<sensor_msgs::msg::JointState>(
             command_joint_topic_, rclcpp::SensorDataQoS(),
@@ -136,6 +158,12 @@ public:
                     state_joint_topic_.c_str(), state_imu_topic_.c_str(), state_foot_force_topic_.c_str(),
                     state_odometry_topic_.c_str(), command_joint_topic_.c_str(), command_kp_topic_.c_str(),
                     command_kd_topic_.c_str());
+        RCLCPP_INFO(get_logger(),
+                    "  enabled: joint_states=%s imu=%s foot_force=%s odom=%s",
+                    enable_joint_states_ ? "true" : "false",
+                    enable_imu_ ? "true" : "false",
+                    enable_foot_force_ ? "true" : "false",
+                    enable_odometry_ ? "true" : "false");
     }
 
 private:
@@ -171,65 +199,77 @@ private:
     {
         low_state_ = *static_cast<const unitree_go::msg::dds_::LowState_*>(messages);
 
-        sensor_msgs::msg::JointState joint_msg;
-        joint_msg.header.stamp = now();
-        joint_msg.name = joint_names_;
-        joint_msg.position.resize(joint_names_.size());
-        joint_msg.velocity.resize(joint_names_.size());
-        joint_msg.effort.resize(joint_names_.size());
-
-        const size_t count = std::min<size_t>(joint_names_.size(), low_state_.motor_state().size());
-        for (size_t i = 0; i < count; ++i)
+        if (enable_joint_states_)
         {
-            joint_msg.position[i] = low_state_.motor_state()[i].q();
-            joint_msg.velocity[i] = low_state_.motor_state()[i].dq();
-            joint_msg.effort[i] = low_state_.motor_state()[i].tau_est();
+            sensor_msgs::msg::JointState joint_msg;
+            joint_msg.header.stamp = now();
+            joint_msg.name = joint_names_;
+            joint_msg.position.resize(joint_names_.size());
+            joint_msg.velocity.resize(joint_names_.size());
+            joint_msg.effort.resize(joint_names_.size());
+
+            const size_t count = std::min<size_t>(joint_names_.size(), low_state_.motor_state().size());
+            for (size_t i = 0; i < count; ++i)
+            {
+                joint_msg.position[i] = low_state_.motor_state()[i].q();
+                joint_msg.velocity[i] = low_state_.motor_state()[i].dq();
+                joint_msg.effort[i] = low_state_.motor_state()[i].tau_est();
+            }
+            joint_state_pub_->publish(joint_msg);
         }
-        joint_state_pub_->publish(joint_msg);
 
-        sensor_msgs::msg::Imu imu_msg;
-        imu_msg.header.stamp = now();
-        imu_msg.header.frame_id = "imu_link";
-        imu_msg.orientation.w = low_state_.imu_state().quaternion()[0];
-        imu_msg.orientation.x = low_state_.imu_state().quaternion()[1];
-        imu_msg.orientation.y = low_state_.imu_state().quaternion()[2];
-        imu_msg.orientation.z = low_state_.imu_state().quaternion()[3];
-        imu_msg.angular_velocity.x = low_state_.imu_state().gyroscope()[0];
-        imu_msg.angular_velocity.y = low_state_.imu_state().gyroscope()[1];
-        imu_msg.angular_velocity.z = low_state_.imu_state().gyroscope()[2];
-        imu_msg.linear_acceleration.x = low_state_.imu_state().accelerometer()[0];
-        imu_msg.linear_acceleration.y = low_state_.imu_state().accelerometer()[1];
-        imu_msg.linear_acceleration.z = low_state_.imu_state().accelerometer()[2];
-        // const double gravity = 9.80665;
-        // imu_msg.linear_acceleration.x /= gravity;
-        // imu_msg.linear_acceleration.y /= gravity;
-        // imu_msg.linear_acceleration.z /= gravity;
-        imu_pub_->publish(imu_msg);
+        if (enable_imu_)
+        {
+            sensor_msgs::msg::Imu imu_msg;
+            imu_msg.header.stamp = now();
+            imu_msg.header.frame_id = "imu_link";
+            imu_msg.orientation.w = low_state_.imu_state().quaternion()[0];
+            imu_msg.orientation.x = low_state_.imu_state().quaternion()[1];
+            imu_msg.orientation.y = low_state_.imu_state().quaternion()[2];
+            imu_msg.orientation.z = low_state_.imu_state().quaternion()[3];
+            imu_msg.angular_velocity.x = low_state_.imu_state().gyroscope()[0];
+            imu_msg.angular_velocity.y = low_state_.imu_state().gyroscope()[1];
+            imu_msg.angular_velocity.z = low_state_.imu_state().gyroscope()[2];
+            imu_msg.linear_acceleration.x = low_state_.imu_state().accelerometer()[0];
+            imu_msg.linear_acceleration.y = low_state_.imu_state().accelerometer()[1];
+            imu_msg.linear_acceleration.z = low_state_.imu_state().accelerometer()[2];
+            // const double gravity = 9.80665;
+            // imu_msg.linear_acceleration.x /= gravity;
+            // imu_msg.linear_acceleration.y /= gravity;
+            // imu_msg.linear_acceleration.z /= gravity;
+            imu_pub_->publish(imu_msg);
+        }
 
-        std_msgs::msg::Float32MultiArray foot_msg;
-        foot_msg.data.resize(4);
-        foot_msg.data[0] = low_state_.foot_force()[0];
-        foot_msg.data[1] = low_state_.foot_force()[1];
-        foot_msg.data[2] = low_state_.foot_force()[2];
-        foot_msg.data[3] = low_state_.foot_force()[3];
-        foot_force_pub_->publish(foot_msg);
+        if (enable_foot_force_)
+        {
+            std_msgs::msg::Float32MultiArray foot_msg;
+            foot_msg.data.resize(4);
+            foot_msg.data[0] = low_state_.foot_force()[0];
+            foot_msg.data[1] = low_state_.foot_force()[1];
+            foot_msg.data[2] = low_state_.foot_force()[2];
+            foot_msg.data[3] = low_state_.foot_force()[3];
+            foot_force_pub_->publish(foot_msg);
+        }
     }
 
     void highStateMessageHandle(const void* messages)
     {
         high_state_ = *static_cast<const unitree_go::msg::dds_::SportModeState_*>(messages);
 
-        nav_msgs::msg::Odometry odom_msg;
-        odom_msg.header.stamp = now();
-        odom_msg.header.frame_id = "odom";
-        odom_msg.child_frame_id = "base";
-        odom_msg.pose.pose.position.x = high_state_.position()[0];
-        odom_msg.pose.pose.position.y = high_state_.position()[1];
-        odom_msg.pose.pose.position.z = high_state_.position()[2];
-        odom_msg.twist.twist.linear.x = high_state_.velocity()[0];
-        odom_msg.twist.twist.linear.y = high_state_.velocity()[1];
-        odom_msg.twist.twist.linear.z = high_state_.velocity()[2];
-        odom_pub_->publish(odom_msg);
+        if (enable_odometry_)
+        {
+            nav_msgs::msg::Odometry odom_msg;
+            odom_msg.header.stamp = now();
+            odom_msg.header.frame_id = "odom";
+            odom_msg.child_frame_id = "base";
+            odom_msg.pose.pose.position.x = high_state_.position()[0];
+            odom_msg.pose.pose.position.y = high_state_.position()[1];
+            odom_msg.pose.pose.position.z = high_state_.position()[2];
+            odom_msg.twist.twist.linear.x = high_state_.velocity()[0];
+            odom_msg.twist.twist.linear.y = high_state_.velocity()[1];
+            odom_msg.twist.twist.linear.z = high_state_.velocity()[2];
+            odom_pub_->publish(odom_msg);
+        }
     }
 
     void onJointCommand(sensor_msgs::msg::JointState::SharedPtr msg)
@@ -340,6 +380,10 @@ private:
     std::string state_imu_topic_;
     std::string state_foot_force_topic_;
     std::string state_odometry_topic_;
+    bool enable_joint_states_ = true;
+    bool enable_imu_ = true;
+    bool enable_foot_force_ = true;
+    bool enable_odometry_ = true;
     std::string command_joint_topic_;
     std::string command_kp_topic_;
     std::string command_kd_topic_;

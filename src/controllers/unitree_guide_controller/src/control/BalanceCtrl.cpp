@@ -21,7 +21,7 @@ BalanceCtrl::BalanceCtrl(const std::shared_ptr<QuadrupedRobot> &robot,
     if (use_sim_kp_kd) {
         g_ << 0, 0, -9.81;
     } else {
-        g_ << 0, 0, -12.0;
+        g_ << 0, 0, -13.0;
     }
     friction_ratio_ = 0.4;
     friction_mat_ << 1, 0, friction_ratio_, -1, 0, friction_ratio_, 0, 1, friction_ratio_, 0, -1,
@@ -30,7 +30,7 @@ BalanceCtrl::BalanceCtrl(const std::shared_ptr<QuadrupedRobot> &robot,
     if (use_sim_kp_kd) {
         pcb_ = Vec3(-0.10, 0.00, 0.00);
     } else {
-        pcb_ = Vec3(0.00, 0.00, 0.00);
+        pcb_ = Vec3(-0.10, 0.00, 0.00);
     }
     Ib_ = Vec3(0.0792, 0.2085, 0.2265).asDiagonal();
 

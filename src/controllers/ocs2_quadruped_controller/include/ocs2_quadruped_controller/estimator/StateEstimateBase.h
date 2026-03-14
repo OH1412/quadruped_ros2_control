@@ -52,6 +52,8 @@ namespace ocs2::legged_robot
         double feet_force_threshold_ = 5.0;
         bool use_foot_force_contact_ = true;
 
+        std::string odom_topic_ = "odom";
+
         vector3_t zyx_offset_ = vector3_t::Zero();
         vector_t rbd_state_;
         Eigen::Quaternion<scalar_t> quat_;

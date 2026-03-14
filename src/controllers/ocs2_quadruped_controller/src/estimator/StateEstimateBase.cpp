@@ -29,6 +29,13 @@ namespace ocs2::legged_robot
             node_->declare_parameter("use_foot_force_contact", use_foot_force_contact_);
         }
         use_foot_force_contact_ = node_->get_parameter("use_foot_force_contact").as_bool();
+
+        if (!node_->has_parameter("odom_topic")) {
+            node_->declare_parameter("odom_topic", odom_topic_);
+        }
+        odom_topic_ = node_->get_parameter("odom_topic").as_string();
+
+        odom_pub_ = node_->create_publisher<nav_msgs::msg::Odometry>(odom_topic_, 10);
     }
 
     void StateEstimateBase::updateJointStates()
