@@ -13,6 +13,7 @@
 #include <ocs2_legged_robot/common/ModelSettings.h>
 #include <ocs2_legged_robot/common/Types.h>
 #include <ocs2_legged_robot/gait/MotionPhaseDefinition.h>
+// #include <ocs2_legged_robot/gait/GaitSchedule.h>
 #include <ocs2_pinocchio_interface/PinocchioEndEffectorKinematics.h>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include "ocs2_quadruped_controller/estimator/GMOContactDetector.h"
@@ -35,6 +36,17 @@ namespace ocs2::legged_robot
             ee_kinematics_ptr_ = eeKinematics;
             if (gmo_detector_) gmo_detector_->setHelpers(rbdConv, eeKinematics);
         }
+
+        // // forward gait schedule and current time to GMO detector (optional)
+        // void setGaitSchedule(const std::shared_ptr<ocs2::legged_robot::GaitSchedule>& gaitSchedule)
+        // {
+        //     if (gmo_detector_) gmo_detector_->setGaitSchedule(gaitSchedule);
+        // }
+
+        // void setCurrentTime(double t)
+        // {
+        //     if (gmo_detector_) gmo_detector_->setCurrentTime(t);
+        // }
 
         virtual void updateJointStates();
 

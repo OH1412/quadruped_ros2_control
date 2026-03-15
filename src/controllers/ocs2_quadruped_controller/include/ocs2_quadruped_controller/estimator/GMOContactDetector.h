@@ -8,6 +8,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <ocs2_centroidal_model/CentroidalModelRbdConversions.h>
+// #include <ocs2_legged_robot/gait/GaitSchedule.h>
+// #include <ocs2_legged_robot/gait/MotionPhaseDefinition.h>
 
 namespace ocs2::legged_robot
 {
@@ -55,5 +57,14 @@ private:
     // optional helpers
     ocs2::CentroidalModelRbdConversions* rbd_conversions_ptr_ = nullptr;
     ocs2::PinocchioEndEffectorKinematics* ee_kinematics_ptr_ = nullptr;
+//     // optional gait information (injected by CtrlComponent / StateEstimateBase)
+//     std::shared_ptr<ocs2::legged_robot::GaitSchedule> gait_schedule_ptr_ = nullptr;
+//     double current_time_ = 0.0;
+
+// public:
+//     // inject gait schedule so GMO can query mode/phase
+//     void setGaitSchedule(const std::shared_ptr<ocs2::legged_robot::GaitSchedule>& gaitSchedule) { gait_schedule_ptr_ = gaitSchedule; }
+//     // update current time (seconds) so GMO can compute phase-based contact prior
+//     void setCurrentTime(double t) { current_time_ = t; }
 };
 } // namespace ocs2::legged_robot

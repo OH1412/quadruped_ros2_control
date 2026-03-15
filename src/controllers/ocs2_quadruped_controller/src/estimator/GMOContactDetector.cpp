@@ -131,6 +131,16 @@ void GMOContactDetector::update(const vector_t& rbd_state, const vector_t& joint
             double vz = centroidal_model::getBaseLinearVelocity(rbd_state, info_)(2);
             double p_vel = 1.0 / (1.0 + std::exp(-vel_sigmoid_k_ * (vz - 0.01)));
             double p_phase = 0.5;
+            // if (gait_schedule_ptr_)
+            // {
+            //     try {
+            //         const size_t mode = gait_schedule_ptr_->getModeSchedule().modeAtTime(current_time_);
+            //         const contact_flag_t contactFlags = modeNumber2StanceLeg(mode);
+            //         p_phase = (contactFlags[i] ? 1.0 : 0.0);
+            //     } catch(...) {
+            //         p_phase = 0.5;
+            //     }
+            // }
             double p_contact = 1.0 - (1.0 - p_force) * (1.0 - p_vel) * (1.0 - p_phase);
             contact_prob_[i] = p_contact;
         }
@@ -146,6 +156,16 @@ void GMOContactDetector::update(const vector_t& rbd_state, const vector_t& joint
             double vz = centroidal_model::getBaseLinearVelocity(rbd_state, info_)(2);
             double p_vel = 1.0 / (1.0 + std::exp(-vel_sigmoid_k_ * (vz - 0.01)));
             double p_phase = 0.5;
+            // if (gait_schedule_ptr_)
+            // {
+            //     try {
+            //         const size_t mode = gait_schedule_ptr_->getModeSchedule().modeAtTime(current_time_);
+            //         const contact_flag_t contactFlags = modeNumber2StanceLeg(mode);
+            //         p_phase = (contactFlags[i] ? 1.0 : 0.0);
+            //     } catch(...) {
+            //         p_phase = 0.5;
+            //     }
+            // }
             double p_contact = 1.0 - (1.0 - p_force) * (1.0 - p_vel) * (1.0 - p_phase);
             contact_prob_[i] = p_contact;
         }

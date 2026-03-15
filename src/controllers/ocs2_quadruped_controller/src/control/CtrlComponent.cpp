@@ -99,6 +99,8 @@ namespace ocs2::legged_robot
         if (estimator_)
         {
             estimator_->setRbdAndKinematics(rbd_conversions_.get(), ee_kinematics_.get());
+            // // inject gait schedule as well so GMO can use real phase information
+            // estimator_->setGaitSchedule(legged_interface_->getSwitchedModelReferenceManagerPtr()->getGaitSchedule());
         }
         observation_.time = 0;
     }
@@ -106,6 +108,7 @@ namespace ocs2::legged_robot
     void CtrlComponent::updateState(const rclcpp::Time& time, const rclcpp::Duration& period)
     {
         // Update State Estimation
+        // if (estimator_) estimator_->setCurrentTime(time.seconds());
         measured_rbd_state_ = estimator_->update(time, period);
         observation_.time += period.seconds();
         const scalar_t yaw_last = observation_.state(9);
