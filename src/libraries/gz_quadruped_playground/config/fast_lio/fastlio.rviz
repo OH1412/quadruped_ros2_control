@@ -81,7 +81,7 @@ Visualization Manager:
           Value: true
         camera_d435:
           Value: true
-        camera_init:
+        odom:
           Value: true
         imu_link:
           Value: true
@@ -95,7 +95,7 @@ Visualization Manager:
       Show Axes: true
       Show Names: false
       Tree:
-        camera_init:
+        odom:
           body:
             {}
       Update Interval: 0
@@ -328,7 +328,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 0; 0; 0
-    Fixed Frame: camera_init
+    Fixed Frame: odom
     Frame Rate: 30
   Name: root
   Tools:

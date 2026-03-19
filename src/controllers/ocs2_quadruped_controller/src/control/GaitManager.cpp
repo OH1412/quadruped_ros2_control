@@ -44,7 +44,7 @@ namespace ocs2::legged_robot
             gait_list_.push_back(loadModeSequenceTemplate(gait_file, name, verbose_));
         }
 
-        RCLCPP_INFO(rclcpp::get_logger("gait_manager"), "GaitManager is ready.");
+        RCLCPP_INFO(::rclcpp::get_logger("gait_manager"), "GaitManager is ready.");
     }
 
     void GaitManager::getTargetGait()
@@ -54,8 +54,8 @@ namespace ocs2::legged_robot
         last_command_ = ctrl_interfaces_.control_inputs_.command;
         const int command = std::max(0, ctrl_interfaces_.control_inputs_.command - 2);
         target_gait_ = gait_list_[command];
-        RCLCPP_INFO(rclcpp::get_logger("GaitManager"), "Switch to gait: %s",
-                    gait_name_list_[command].c_str());
+        RCLCPP_INFO(::rclcpp::get_logger("GaitManager"), "Switch to gait: %s",
+                gait_name_list_[command].c_str());
         gait_updated_ = true;
     }
 }

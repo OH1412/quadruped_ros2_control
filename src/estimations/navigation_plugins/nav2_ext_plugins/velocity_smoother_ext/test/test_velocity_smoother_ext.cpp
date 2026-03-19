@@ -128,7 +128,7 @@ TEST(VelocitySmootherExtTest, approxClosedLoopTestTimer)
   odom_pub->on_activate();
   nav_msgs::msg::Odometry odom_msg;
   odom_msg.header.frame_id = "odom";
-  odom_msg.child_frame_id = "base_link";
+  odom_msg.child_frame_id = "base";
 
   // Fill buffer with 0 twisted-commands
   for (unsigned int i = 0; i != 30; i++) {

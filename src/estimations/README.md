@@ -187,7 +187,7 @@ SCURC_Nav_Sim/
 │   │       └── velocity_smoother_ext/   # 速度平滑器扩展
 │   ├── robot_functionality/             # 机器人功能模块
 │   │   ├── kfs_detection_nav/           # KFS目标检测与导航
-│   │   ├── r2_bringup/                  # 机器人启动配置 (Launch/Params)
+│   │   ├── leg_bringup/                  # 机器人启动配置 (Launch/Params)
 │   │   ├── rc_decision/                 # 决策模块
 │   │   │   └── fly_step_mission/        # FlyStep航点任务执行
 │   │   ├── rc_interfaces/               # ROS2接口定义
@@ -316,7 +316,7 @@ cd SCURC_Nav_Sim
 source ./load_all.sh
 
 # 2. 启动完整仿真系统
-ros2 launch r2_bringup simulation_bringup.launch.launch.py
+ros2 launch leg_bringup simulation_bringup.launch.launch.py
 ```
 
 **成功标志**: RViz中显示机器人模型、地图和导航路径，行为树开始执行航点任务。
@@ -340,13 +340,13 @@ sudo apt install ros-humble-pointcloud-to-laserscan
 
 ```bash
 source ./load_all.sh
-ros2 launch r2_bringup bringup_in_real.launch.py
+ros2 launch leg_bringup bringup_in_real.launch.py
 ```
 
 可选：需要同时起仿真（不推荐与实车同开）
 
 ```bash
-ros2 launch r2_bringup bringup_in_real.launch.py start_sim:=true
+ros2 launch leg_bringup bringup_in_real.launch.py start_sim:=true
 ```
 
 ### 验证与自检
@@ -371,12 +371,12 @@ ros2 topic echo /cmd_vel
   - 示例：
 
     ```bash
-    ros2 launch r2_bringup pointcloud_to_scan.launch.py \
+    ros2 launch leg_bringup pointcloud_to_scan.launch.py \
       angle_increment:=0.026 range_min:=0.3 range_max:=15.0 \
       min_height:=-0.15 max_height:=0.25 valid_ratio_threshold:=0.5
     ```
 
-更多排查与说明，请参考 `src/robot_functionality/r2_bringup/README.md` 的“常见问题（实车）”。
+更多排查与说明，请参考 `src/robot_functionality/leg_bringup/README.md` 的“常见问题（实车）”。
 
 ---
 
@@ -468,7 +468,7 @@ source ./load_all.sh
 ros2 launch rc_robot_simulation simulation.launch.py
 
 # 终端 2: 启动RViz可视化
-ros2 launch r2_bringup rviz.launch.py
+ros2 launch leg_bringup rviz.launch.py
 ```
 
 ### 2. 启动定位与建图 (SLAM + Mapping)
@@ -486,7 +486,7 @@ ros2 launch elevation_mapping_cupy elevation_mapping.launch.py
 
 ```bash
 # 终端 5: 启动Nav2及相关节点
-ros2 launch r2_bringup r2_bringup.launch.py
+ros2 launch leg_bringup leg_bringup.launch.py
 ```
 
 ### 4. 启动目标检测与决策 (可选)
@@ -503,7 +503,7 @@ ros2 launch kfs_detection_nav kfs_detection.launch.py
 
 ```bash
 # 启动完整KFS任务流程（包含航点规划）
-ros2 launch r2_bringup dynamic_waypoint_mission.launch.py
+ros2 launch leg_bringup dynamic_waypoint_mission.launch.py
 
 # 或启动FlyStep行为树任务
 ros2 launch fly_step_mission fly_step_mission_bt.launch.py
@@ -556,7 +556,7 @@ base_frame: 'base_link'   # 机器人基坐标系
 
 ### 导航参数配置
 
-编辑 `src/robot_functionality/r2_bringup/params/nav2_params.yaml`:
+编辑 `src/robot_functionality/leg_bringup/params/nav2_params.yaml`:
 
 ```yaml
 # 全局规划器
